@@ -309,7 +309,7 @@ export default function AlvoPropostasV3() {
       node.style.background = '#ffffff';
       const canvas = await window.html2canvas(node, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
       const imgData = canvas.toDataURL('image/png');
-      const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
+      const pdf = new window.jspdf.jsPDF('l', 'mm', 'a4');
 
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
