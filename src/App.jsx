@@ -495,7 +495,16 @@ export default function App() {
                 </ul>
                 <div className="mt-3 rounded-xl bg-slate-50 border p-3">
                   Investimento real: <strong>{brl(valores.valorInvestidoReal)}</strong><br />
-                  Saldo a compor: <strong className="text-rose-700">{brl(valores.saldoACompor)}</strong>
+                  Saldo a compor: <strong className=\"text-rose-700\">{brl(valores.saldoACompor)}</strong>
+                </div>
+                <div className=\"mt-3 rounded-xl bg-white border p-3\">
+                  <p className=\"font-semibold mb-1\">Totais do fluxo</p>
+                  <div className=\"grid grid-cols-1 md:grid-cols-2 gap-2\">
+                    <div>Fluxo total (sem financiamento): <strong>{brl(valores.totalFluxoSemFin)}</strong></div>
+                    {data.chavesForma === 'posConstrutora' && (<div>Pós-chaves (total): <strong>{brl(valores.totalPosChaves)}</strong></div>)}
+                    {data.chavesForma === 'financiamento' && (<div>Total financiado (banco): <strong>{brl(valores.totalFinanciado)}</strong></div>)}
+                    <div>Subtotal até chaves: <strong>{brl(valores.totalAteChaves)}</strong></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -523,6 +532,30 @@ export default function App() {
               </div>
               <p className="mt-4 text-[13px] text-gray-700 leading-6">A <strong>Alvo BR</strong> é especializada em curadoria de investimentos imobiliários, unindo dados, método e resultado.</p>
               <p className="mt-4 text-[11px] text-gray-500">Validade desta proposta: <strong>{data.validade}</strong></p>
+            </section>
+
+            {/* Resumo Executivo */}
+            <section className=\"p-12 page page-break\">
+              <h3 className=\"font-semibold text-lg mb-3\">Resumo Executivo</h3>
+              <div className=\"grid grid-cols-2 gap-8 text-[13px]\">
+                <div className=\"grid grid-cols-2 gap-3\">
+                  <KPI title=\"Valor do imóvel\" value={brl(valores.total)} />
+                  <KPI title=\"Investimento real\" value={brl(valores.valorInvestidoReal)} />
+                  <KPI title=\"Fluxo total (sem financiamento)\" value={brl(valores.totalFluxoSemFin)} />
+                  {data.chavesForma === 'posConstrutora' && (<KPI title=\"Pós-chaves (total)\" value={brl(valores.totalPosChaves)} />)}
+                  {data.chavesForma === 'financiamento' && (<KPI title=\"Financiado (banco)\" value={brl(valores.totalFinanciado)} />)}
+                  <KPI title=\"Saldo a compor\" value={brl(valores.saldoACompor)} highlight />
+                </div>
+                <div className=\"rounded-xl border p-4 bg-white\">
+                  <p className=\"font-semibold mb-2\">Resumo do fluxo</p>
+                  <ul className=\"space-y-1\">
+                    <li>Entrada: {valores.entradaParcelas === 1 ? brl(valores.entradaValor) : `${brl(valores.entradaValor)} em ${valores.entradaParcelas}x de ${brl(valores.entradaParcela)}`}</li>
+                    <li>Durante a obra: {brl(valores.duranteObraTotal)} em {valores.duranteObraParcelas}x de {brl(valores.duranteObraParcela)}</li>
+                    <li>Reforços: {brl(valores.reforcosTotal)} {valores.qRef ? `(${valores.qRef}× de ${brl(valores.vRef)} a cada ${valores.freqRef}m)` : ''}</li>
+                    <li>Chaves: {brl(valores.chavesTotal)} {data.chavesForma === 'financiamento' ? '(financ.)' : data.chavesForma === 'posConstrutora' ? `em ${data.chavesPosParcelas||0}x` : '(à vista)'}</li>
+                  </ul>
+                </div>
+              </div>
             </section>
 
             {/* Bloco 1: Empresa & Cliente */}
@@ -735,6 +768,15 @@ function DataRow({ k, v }) {
     </div>
   );
 }
+function KPI({ title, value, highlight }) {
+  return (
+    <div className={"rounded-xl border p-3 " + (highlight ? "bg-emerald-50 border-emerald-200" : "bg-white") }>
+      <div className="text-xs text-gray-600 mb-1">{title}</div>
+      <div className="text-lg font-bold">{value}</div>
+    </div>
+  );
+}
+
 function TR({ label, value }) {
   return (
     <tr>
