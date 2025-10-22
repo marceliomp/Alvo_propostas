@@ -101,6 +101,11 @@ const sample = {
   ocupacao: 70,
   custosOperacionais: 30,
   validade: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+  arquivoOriginal: null,
+  imagem1: null,
+  imagem2: null,
+  imagem3: null,
+  imagem4: null,
 };
 
 /********************
@@ -152,7 +157,9 @@ export default function App() {
     const totalAteChaves = entradaValor + duranteObraTotal + reforcosTotal;
 
     const valorInvestidoReal = totalFluxoSemFin;
-    const saldoACompor = Math.max(0, total - valorInvestidoReal);
+    const totalCoberto = valorInvestidoReal + totalFinanciado;
+    const saldoACompor = total - totalCoberto;
+    const totalJaSomado = totalCoberto;
 
     const precoM2 = Number(data.area) > 0 ? total / Number(data.area) : 0;
 
@@ -213,6 +220,12 @@ export default function App() {
     }
 
     const scheduleOrdenado = schedule.sort((a, b) => a.data - b.data);
+    let acumulado = 0;
+    const scheduleDetalhado = scheduleOrdenado.map((item) => {
+      acumulado += item.valor;
+      const percentual = totalFluxoSemFin > 0 ? (acumulado / totalFluxoSemFin) * 100 : 0;
+      return { ...item, acumulado, percentual };
+    });
 
     return {
       total,
@@ -227,6 +240,8 @@ export default function App() {
       reforcosTotal,
       valorInvestidoReal,
       saldoACompor,
+      totalCoberto,
+      totalJaSomado,
       precoM2,
       qRef,
       vRef,
@@ -238,7 +253,7 @@ export default function App() {
       totalFinanciado,
       totalFluxoSemFin,
       totalAteChaves,
-      schedule: scheduleOrdenado,
+      schedule: scheduleDetalhado,
       entradaPercent: total > 0 ? (entradaValor / total) * 100 : 0,
       duranteObraPercent: total > 0 ? (duranteObraTotal / total) * 100 : 0,
     };
@@ -362,6 +377,7 @@ export default function App() {
   };
 
   const recalc = () => setData((d) => ({ ...d }));
+  const setFile = (k) => (file) => setData((d) => ({ ...d, [k]: file }));
 
   const savePDF = async () => {
     await ensurePdfLibs();
@@ -415,6 +431,7 @@ export default function App() {
   const fillExample = () => setData(sample);
   const clearAll = () => setData({});
 
+  const imagensGaleria = [data.imagem1, data.imagem2, data.imagem3, data.imagem4].filter(Boolean);
   const resumoFluxo = [
     { label: "Entrada", valor: valores.totalEntrada },
     { label: "Durante a obra", valor: valores.totalObra },
@@ -426,17 +443,32 @@ export default function App() {
       : null,
   ].filter(Boolean);
 
+  const saldoApproxZero = Math.abs(valores.saldoACompor) < 0.5;
+  const saldoTitle = saldoApproxZero
+    ? "Saldo quitado"
+    : valores.saldoACompor > 0
+    ? "Saldo a compor"
+    : "Excedente (sobra)";
+  const totalCobertoTitle = valores.totalFinanciado > 0 ? "Total coberto (cliente + banco)" : null;
+  const coberturaCliente = valores.valorInvestidoReal;
+  const coberturaBanco = valores.totalFinanciado;
+  const coberturaDetalhe =
+    coberturaBanco > 0
+      ? `Cliente: ${brl(coberturaCliente)} · Banco: ${brl(coberturaBanco)}`
+      : `Cliente: ${brl(coberturaCliente)}`;
+
   const resumoKPIs = [
     { title: "Valor do imóvel", value: brl(valores.total) },
-    { title: "Investimento real", value: brl(valores.valorInvestidoReal) },
+    { title: "Investimento real (cliente)", value: brl(valores.valorInvestidoReal) },
     { title: "Fluxo total (cliente)", value: brl(valores.totalFluxoSemFin) },
     valores.totalPosChaves ? { title: "Pós-chaves", value: brl(valores.totalPosChaves) } : null,
     valores.totalFinanciado ? { title: "Financiado (banco)", value: brl(valores.totalFinanciado) } : null,
+    totalCobertoTitle ? { title: totalCobertoTitle, value: brl(valores.totalJaSomado) } : null,
     {
-      title: "Saldo a compor",
+      title: saldoTitle,
       value: brl(valores.saldoACompor),
       highlight: true,
-      subValue: `Total já somado: ${brl(valores.totalFluxoSemFin)}`,
+      subValue: coberturaDetalhe,
     },
   ].filter(Boolean);
 
@@ -724,7 +756,13 @@ export default function App() {
                   Investimento real: <strong>{brl(valores.valorInvestidoReal)}</strong>
                 </div>
                 <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
-                  Saldo a compor: <strong className="text-emerald-700">{brl(valores.saldoACompor)}</strong>
+                  <div className="font-semibold text-emerald-800">{saldoTitle}</div>
+                  <div>
+                    <strong className="text-emerald-700">{brl(valores.saldoACompor)}</strong>
+                  </div>
+                  <div className="text-[11px] text-emerald-700/80 mt-1">
+                    Cobertura atual: {brl(valores.totalJaSomado)}
+                  </div>
                 </div>
               </div>
               <div className="mt-3 rounded-xl bg-white border p-3">
@@ -746,6 +784,38 @@ export default function App() {
                 <div className="mt-2 text-xs text-gray-600">
                   Fluxo total (cliente): <strong>{brl(valores.totalFluxoSemFin)}</strong>
                 </div>
+                <div className="text-xs text-gray-600">
+                  Cobertura atual (cliente + banco): <strong>{brl(valores.totalJaSomado)}</strong>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          <Card title="5) Materiais e mídias">
+            <div className="space-y-4">
+              <FileInput
+                label="Arquivo original do projeto"
+                file={data.arquivoOriginal}
+                accept="application/pdf,image/*"
+                helper="Anexe o PDF ou imagem-base entregue pela construtora para manter a proposta completa."
+                onFileChange={setFile("arquivoOriginal")}
+              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {[
+                  { key: "imagem1", label: "Imagem 1" },
+                  { key: "imagem2", label: "Imagem 2" },
+                  { key: "imagem3", label: "Imagem 3" },
+                  { key: "imagem4", label: "Imagem 4" },
+                ].map((item) => (
+                  <FileInput
+                    key={item.key}
+                    label={`${item.label} do empreendimento`}
+                    file={data[item.key]}
+                    accept="image/*"
+                    helper="Use imagens em alta resolução para o PDF."
+                    onFileChange={setFile(item.key)}
+                  />
+                ))}
               </div>
             </div>
           </Card>
@@ -827,6 +897,10 @@ export default function App() {
                     <span>Fluxo total (cliente)</span>
                     <span className="font-semibold">{brl(valores.totalFluxoSemFin)}</span>
                   </div>
+                  <div className="text-xs text-gray-500 flex justify-between">
+                    <span>Cobertura atual</span>
+                    <span className="font-medium">{brl(valores.totalJaSomado)}</span>
+                  </div>
                 </div>
                 <div className="rounded-2xl border bg-slate-50 p-4 text-sm space-y-2">
                   <div className="flex justify-between">
@@ -849,17 +923,61 @@ export default function App() {
                       <strong>{brl(valores.totalFinanciado)}</strong>
                     </div>
                   )}
+                  {valores.totalFinanciado > 0 && (
+                    <div className="flex justify-between">
+                      <span>Total coberto</span>
+                      <strong>{brl(valores.totalJaSomado)}</strong>
+                    </div>
+                  )}
                   <div className="flex justify-between text-emerald-700 font-semibold">
-                    <span>Saldo a compor</span>
+                    <span>{saldoTitle}</span>
                     <span>{brl(valores.saldoACompor)}</span>
                   </div>
                   <div className="flex justify-between text-[11px] text-gray-500">
-                    <span>Total já somado</span>
-                    <span>{brl(valores.totalFluxoSemFin)}</span>
+                    <span>Cobertura atual</span>
+                    <span>{brl(valores.totalJaSomado)}</span>
                   </div>
                 </div>
               </div>
             </section>
+
+            {(data.arquivoOriginal || imagensGaleria.length > 0) && (
+              <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
+                <h3 className="text-lg font-semibold text-slate-700">Materiais do Empreendimento</h3>
+                {data.arquivoOriginal && (
+                  <div className="rounded-2xl border bg-slate-50 p-4 flex flex-wrap items-center justify-between gap-3 text-sm">
+                    <div>
+                      <p className="font-semibold text-slate-700">Arquivo original</p>
+                      <p className="text-xs text-gray-500">{data.arquivoOriginal.name}</p>
+                    </div>
+                    <a
+                      href={data.arquivoOriginal.dataUrl}
+                      download={data.arquivoOriginal.name || "arquivo-original"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 rounded-full border bg-white text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition"
+                    >
+                      Abrir arquivo
+                    </a>
+                  </div>
+                )}
+                {imagensGaleria.length > 0 && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {imagensGaleria.map((img, index) => (
+                      <figure
+                        key={`${img.name}-${index}`}
+                        className="border rounded-2xl overflow-hidden bg-white shadow-sm"
+                      >
+                        <img src={img.dataUrl} alt={img.name || `Imagem ${index + 1}`} className="w-full h-56 object-cover" />
+                        <figcaption className="px-3 py-2 text-[11px] text-gray-500 truncate">
+                          {img.name || `Imagem ${index + 1}`}
+                        </figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                )}
+              </section>
+            )}
 
             <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
@@ -887,29 +1005,25 @@ export default function App() {
                       </tr>
                     </thead>
                     <tbody>
-                      {(() => {
-                        let acumulado = 0;
-                        return valores.schedule.map((p, i) => {
-                          acumulado += p.valor;
-                          const perc = valores.totalFluxoSemFin > 0 ? (acumulado / valores.totalFluxoSemFin) * 100 : 0;
-                          return (
-                            <tr key={`${p.tipo}-${i}`} className="border-b last:border-0">
-                              <td className="p-2">{i + 1}</td>
-                              <td className="p-2">{p.data.toLocaleDateString("pt-BR")}</td>
-                              <td className="p-2">{p.tipo}</td>
-                              <td className="p-2 text-right">{brl(p.valor)}</td>
-                              <td className="p-2 text-right">{brl(acumulado)}</td>
-                              <td className="p-2 text-right">{perc.toFixed(2)}%</td>
-                            </tr>
-                          );
-                        });
-                      })()}
+                      {valores.schedule.map((p, i) => (
+                        <tr key={`${p.tipo}-${i}`} className="border-b last:border-0">
+                          <td className="p-2">{i + 1}</td>
+                          <td className="p-2">{p.data.toLocaleDateString("pt-BR")}</td>
+                          <td className="p-2">{p.tipo}</td>
+                          <td className="p-2 text-right">{brl(p.valor)}</td>
+                          <td className="p-2 text-right">{brl(p.acumulado)}</td>
+                          <td className="p-2 text-right">{p.percentual.toFixed(2)}%</td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 ) : (
                   <div className="p-4 text-sm text-gray-600 space-y-2">
                     <p>
                       Total acumulado do cliente: <strong>{brl(valores.totalFluxoSemFin)}</strong>
+                    </p>
+                    <p>
+                      Cobertura total (cliente + banco): <strong>{brl(valores.totalJaSomado)}</strong>
                     </p>
                     {valores.schedule.length > 0 && (
                       <p className="text-xs text-gray-500">
@@ -1074,6 +1188,59 @@ function Input({ label, value, onChange, placeholder, currency = false }) {
         inputMode={currency ? "numeric" : undefined}
       />
     </label>
+  );
+}
+
+function FileInput({ label, file, accept, helper, onFileChange }) {
+  const handleChange = (event) => {
+    const selected = event.target.files?.[0];
+    if (!selected) {
+      onFileChange(null);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      onFileChange({ name: selected.name, type: selected.type, dataUrl: reader.result });
+    };
+    reader.onerror = () => onFileChange(null);
+    reader.readAsDataURL(selected);
+    event.target.value = "";
+  };
+
+  return (
+    <div className="space-y-2">
+      <label className="block">
+        <div className="text-xs text-gray-600 mb-1">{label}</div>
+        <input
+          type="file"
+          accept={accept}
+          onChange={handleChange}
+          className="block w-full text-xs text-gray-600 file:mr-3 file:rounded-full file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-emerald-700 file:font-medium"
+        />
+      </label>
+      {helper && <p className="text-[11px] text-gray-500">{helper}</p>}
+      {file ? (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between rounded-xl border bg-white px-3 py-2 text-xs text-gray-600">
+            <span className="truncate pr-3">{file.name}</span>
+            <button
+              type="button"
+              onClick={() => onFileChange(null)}
+              className="text-emerald-700 font-medium hover:underline"
+            >
+              Remover
+            </button>
+          </div>
+          {file.type?.startsWith("image/") ? (
+            <div className="border rounded-xl overflow-hidden bg-white shadow-sm">
+              <img src={file.dataUrl} alt={file.name} className="w-full h-40 object-cover" />
+            </div>
+          ) : (
+            <p className="text-[11px] text-gray-500">Arquivo anexado pronto para o PDF.</p>
+          )}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
