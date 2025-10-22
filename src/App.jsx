@@ -496,23 +496,58 @@ export default function AlvoPropostasV3() {
 
         {/* right column */}
         <div className="lg:col-span-3">
-          <div ref={previewRef} className="proposta-preview bg-white shadow-md rounded-3xl overflow-hidden ring-1 ring-slate-200">
-            <div className="p-8 border-b bg-gradient-to-r from-slate-50 to-white">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <h2 className="text-3xl font-extrabold tracking-tight">Proposta Comercial</h2>
-                  <p className="text-sm text-gray-500 truncate">{data.company}</p>
-                  <p className="text-sm text-gray-500">{data.date} · {data.consultor}</p>
-                  <p className="text-sm text-gray-500">{data.phone} · {data.email}</p>
-                  {data.siteUrl && (
-                    <a href={data.siteUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline break-all">
-                      {data.siteUrl}
-                    </a>
-                  )}
-                </div>
-                <AlvoLogo size={56} />
-              </div>
-            </div>
+<div
+  ref={previewRef}
+  className="proposta-preview bg-white shadow-md rounded-3xl overflow-hidden ring-1 ring-slate-200 flex flex-col divide-y divide-gray-200"
+>
+  {/* PARTE DE CIMA: SETUP */}
+  <div className="flex-1 p-6 bg-gradient-to-b from-slate-50 to-white">
+    <h2 className="text-2xl font-bold mb-4 text-emerald-800">🔧 Setup da Proposta</h2>
+    <div className="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <p><strong>Cliente:</strong> {data.cliente}</p>
+        <p><strong>Empreendimento:</strong> {data.empreendimento}</p>
+        <p><strong>Construtora:</strong> {data.construtora}</p>
+        <p><strong>Tipo:</strong> {data.tipo}</p>
+        <p><strong>Área:</strong> {data.area} m²</p>
+        <p><strong>Entrega:</strong> {data.entrega}</p>
+      </div>
+      <div>
+        <p><strong>Entrada:</strong> {brl(valores.entradaValor)}</p>
+        <p><strong>Obra:</strong> {brl(valores.duranteObraTotal)} em {data.duranteObraParcelas}x</p>
+        <p><strong>Chaves:</strong> {brl(valores.chavesTotal)}</p>
+        <p><strong>Balões:</strong> {data.balaoQuantidade} × {brl(data.balaoValor)}</p>
+        <p><strong>Investimento Real:</strong> {brl(valores.valorInvestidoReal)}</p>
+        <p><strong>Saldo a Compor:</strong> <span className="text-rose-700 font-semibold">{brl(valores.saldoACompor)}</span></p>
+      </div>
+    </div>
+  </div>
+
+  {/* PARTE DE BAIXO: RESULTADO */}
+  <div className="flex-1 p-6 bg-white">
+    <h2 className="text-2xl font-bold mb-4 text-emerald-800">📊 Resultados e Projeções</h2>
+    <div className="grid grid-cols-2 gap-4 text-sm">
+      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+        <h3 className="font-semibold mb-2 text-emerald-800">Cenário 1: Revenda</h3>
+        <p><strong>Valor final:</strong> {brl(cenario1.valorFinal)}</p>
+        <p><strong>Lucro:</strong> {brl(cenario1.lucro)}</p>
+        <p><strong>ROI:</strong> {pct(cenario1.roi)}</p>
+        <p><strong>ROAS:</strong> {pct(cenario1.roas)}</p>
+        <p><strong>TIR (a.a.):</strong> {pct(cenario1.tir)}</p>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+        <h3 className="font-semibold mb-2 text-blue-800">Cenário 2: Short Stay</h3>
+        <p><strong>Renda mensal líquida:</strong> {brl(cenario2.aluguelLiquido)}</p>
+        <p><strong>Renda acumulada:</strong> {brl(cenario2.rendaAcumulada)}</p>
+        <p><strong>Valorização:</strong> {brl(cenario2.patrimonioAcrescido)}</p>
+        <p><strong>ROI:</strong> {pct(cenario2.roi)}</p>
+        <p><strong>ROAS:</strong> {pct(cenario2.roas)}</p>
+        <p><strong>TIR (a.a.):</strong> {pct(cenario2.tir)}</p>
+      </div>
+    </div>
+  </div>
+</div>
 
             <section className="p-8">
               <h3 className="font-semibold text-lg mb-3">1. Apresentação</h3>
