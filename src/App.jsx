@@ -1,57 +1,62 @@
+ (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
 diff --git a/src/App.jsx b/src/App.jsx
-index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa5b34d49b 100644
+index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..e19c2f1fb565dc514180bb56328cdb4cad7d2a20 100644
 --- a/src/App.jsx
 +++ b/src/App.jsx
-@@ -1,1025 +1,931 @@
+@@ -1,1028 +1,1000 @@
  import React, { useEffect, useMemo, useRef, useState } from "react";
  
  /********************
   * Utils
   ********************/
  const brl = (n) => Number(n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
- const pct = (n) => (isFinite(Number(n)) ? Number(n) : 0).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
+-const pct = (n) => (isFinite(Number(n)) ? Number(n) : 0).toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
++const pct = (n) => {
++  const num = Number.isFinite(Number(n)) ? Number(n) : 0;
++  return num.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
++};
  const currencyToNumber = (s) => {
    if (typeof s === "number") return s;
    if (!s) return 0;
    const clean = s.toString().replace(/[R$\s\.]/g, "").replace(",", ".");
    const num = parseFloat(clean);
 -  return isNaN(num) ? 0 : num;
-+  return Number.isNaN(num) ? 0 : num;
++  return Number.isFinite(num) ? num : 0;
  };
  const calcularTIR = (fluxos, chute = 0.1) => {
 -  let taxa = chute, iter = 0;
 -  const max = 1000, eps = 1e-4;
+-  while (iter < max) {
+-    let vpl = 0, der = 0;
 +  let taxa = chute;
-+  let iter = 0;
 +  const max = 1000;
 +  const eps = 1e-4;
-   while (iter < max) {
--    let vpl = 0, der = 0;
--    for (let i = 0; i < fluxos.length; i++) {
++  for (let iter = 0; iter < max; iter++) {
++    let vpl = 0;
++    let der = 0;
+     for (let i = 0; i < fluxos.length; i++) {
 -      vpl += fluxos[i] / Math.pow(1 + taxa, i);
 -      der -= (i * fluxos[i]) / Math.pow(1 + taxa, i + 1);
-+    let vpl = 0;
-+    let derivada = 0;
-+    for (let i = 0; i < fluxos.length; i += 1) {
 +      const fator = Math.pow(1 + taxa, i);
 +      vpl += fluxos[i] / fator;
-+      derivada -= (i * fluxos[i]) / (fator * (1 + taxa));
++      der -= (i * fluxos[i]) / (fator * (1 + taxa));
      }
 -    if (Math.abs(vpl) < eps || der === 0) break;
 -    taxa = taxa - vpl / der;
 -    iter++;
-+    if (Math.abs(vpl) < eps || derivada === 0) break;
-+    taxa -= vpl / derivada;
-+    iter += 1;
++    if (Math.abs(vpl) < eps || der === 0) return taxa * 100;
++    taxa -= vpl / der;
    }
-   return iter < max ? taxa * 100 : 0;
+-  return iter < max ? taxa * 100 : 0;
++  return 0;
  };
  
  /********************
-- * Logo
-+ * Assets
+  * Logo
   ********************/
- const ALVO_LOGO = "data:image/svg+xml,%3Csvg width='1200' height='400' viewBox='0 0 1200 400' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50' y='300' font-family='Arial' font-size='280' font-weight='900' fill='%233A3A3A' letter-spacing='-10'%3EALVO%3C/text%3E%3Ccircle cx='950' cy='200' r='140' stroke='%233A3A3A' stroke-width='28' fill='none'/%3E%3Ccircle cx='950' cy='200' r='85' stroke='%233A3A3A' stroke-width='20' fill='none'/%3E%3Ctext x='1050' y='235' font-family='Arial' font-size='95' font-weight='700' fill='%2334747E'%3EBR%3C/text%3E%3C/svg%3E";
+-const ALVO_LOGO = "data:image/svg+xml,%3Csvg width='1200' height='400' viewBox='0 0 1200 400' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50' y='300' font-family='Arial' font-size='280' font-weight='900' fill='%233A3A3A' letter-spacing='-10'%3EALVO%3C/text%3E%3Ccircle cx='950' cy='200' r='140' stroke='%233A3A3A' stroke-width='28' fill='none'/%3E%3Ccircle cx='950' cy='200' r='85' stroke='%233A3A3A' stroke-width='20' fill='none'/%3E%3Ctext x='1050' y='235' font-family='Arial' font-size='95' font-weight='700' fill='%2334747E'%3EBR%3C/text%3E%3C/svg%3E";
++const ALVO_LOGO =
++  "data:image/svg+xml,%3Csvg width='1200' height='400' viewBox='0 0 1200 400' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50' y='300' font-family='Arial' font-size='280' font-weight='900' fill='%233A3A3A' letter-spacing='-10'%3EALVO%3C/text%3E%3Ccircle cx='950' cy='200' r='140' stroke='%233A3A3A' stroke-width='28' fill='none'/%3E%3Ccircle cx='950' cy='200' r='85' stroke='%233A3A3A' stroke-width='20' fill='none'/%3E%3Ctext x='1050' y='235' font-family='Arial' font-size='95' font-weight='700' fill='%2334747E'%3EBR%3C/text%3E%3C/svg%3E";
  const AlvoLogo = ({ size = 48 }) => <img src={ALVO_LOGO} alt="Alvo BR" style={{ height: size, width: "auto" }} />;
  
  /********************
@@ -135,20 +140,17 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
  
 -  // Prazo de obra governa nº de parcelas e anos de valorização
    useEffect(() => {
--    setData((d) => {
--      const anos = Number(d.prazoObraAnos || 0);
--      if (!anos) return d;
-+    setData((prev) => {
-+      const anos = Number(prev.prazoObraAnos || 0);
-+      if (!anos) return prev;
-       const alvoParcelas = anos * 12;
--      const aindaPadrao = !d.duranteObraParcelas || d.duranteObraParcelas === sample.prazoObraAnos * 12;
-+      const aindaPadrao = !prev.duranteObraParcelas || prev.duranteObraParcelas === sample.prazoObraAnos * 12;
+     setData((d) => {
+       const anos = Number(d.prazoObraAnos || 0);
+       if (!anos) return d;
+-      const alvoParcelas = anos * 12;
++      const parcelasEsperadas = anos * 12;
+       const aindaPadrao = !d.duranteObraParcelas || d.duranteObraParcelas === sample.prazoObraAnos * 12;
++      if (!aindaPadrao) return d;
        return {
--        ...d,
+         ...d,
 -        duranteObraParcelas: aindaPadrao ? alvoParcelas : d.duranteObraParcelas,
-+        ...prev,
-+        duranteObraParcelas: aindaPadrao ? alvoParcelas : prev.duranteObraParcelas,
++        duranteObraParcelas: parcelasEsperadas,
        };
      });
    }, [data.prazoObraAnos]);
@@ -160,118 +162,130 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
  
 -    // Entrada NOMINAL (com possibilidade futura de parcelas de entrada)
 -    const entradaValor = Number(data.entradaValor || 0);
-+    const entradaValor = Math.max(0, Number(data.entradaValor || 0));
-     const entradaParcelas = Math.max(1, Number(data.entradaParcelas || 1));
+-    const entradaParcelas = Math.max(1, Number(data.entradaParcelas || 1));
 -    const entradaParcela = entradaValor / entradaParcelas;
-+    const entradaParcela = entradaParcelas ? entradaValor / entradaParcelas : 0;
++    const entradaValor = Math.max(0, Number(data.entradaValor || 0));
++    const entradaParcelas = Math.max(1, Math.floor(Number(data.entradaParcelas || 1)));
++    const entradaParcela = entradaParcelas > 0 ? entradaValor / entradaParcelas : 0;
  
 -    // Obra NOMINAL
 -    const parcelasObra = Number(data.duranteObraParcelas || 0);
 -    const duranteObraParcela = Number(data.obraParcelaValor || 0);
 -    const duranteObraTotal = duranteObraParcela * Math.max(0, parcelasObra);
-+    const parcelasObra = Math.max(0, Number(data.duranteObraParcelas || 0));
++    const parcelasObra = Math.max(0, Math.floor(Number(data.duranteObraParcelas || 0)));
 +    const duranteObraParcela = Math.max(0, Number(data.obraParcelaValor || 0));
 +    const duranteObraTotal = duranteObraParcela * parcelasObra;
  
 -    // Chaves (SOMENTE %)
 -    const chavesTotal = (total * Number(data.chavesPercent || 0)) / 100;
--    const chavesFinanciado = data.chavesForma === "financiamento";
--
++    const chavesPercent = Math.max(0, Number(data.chavesPercent || 0));
++    const chavesTotal = (total * chavesPercent) / 100;
+     const chavesFinanciado = data.chavesForma === "financiamento";
+ 
 -    // Reforços (antes Balões) NOMINAIS — passam a compor o investimento real e o fluxo
-     const qRef = Math.max(0, Number(data.balaoQuantidade || 0));
+-    const qRef = Math.max(0, Number(data.balaoQuantidade || 0));
++    const qRef = Math.max(0, Math.floor(Number(data.balaoQuantidade || 0)));
      const vRef = Math.max(0, Number(data.balaoValor || 0));
-     const freqRef = Math.max(1, Number(data.balaoFrequenciaMeses || 1));
+-    const freqRef = Math.max(1, Number(data.balaoFrequenciaMeses || 1));
++    const freqRef = Math.max(1, Math.floor(Number(data.balaoFrequenciaMeses || 1)));
      const reforcosTotal = qRef * vRef;
  
 -    const valorInvestidoReal =
 -      (entradaValor + duranteObraTotal + reforcosTotal) + (chavesFinanciado ? 0 : chavesTotal);
-+    const chavesPercent = Math.max(0, Number(data.chavesPercent || 0));
-+    const chavesTotal = (total * chavesPercent) / 100;
-+    const chavesFinanciado = data.chavesForma === "financiamento";
 +    const totalPosChaves = data.chavesForma === "posConstrutora" ? chavesTotal : 0;
 +    const totalFinanciado = chavesFinanciado ? chavesTotal : 0;
-+    const chavesNoFluxo = data.chavesForma === "avista" ? chavesTotal : totalPosChaves;
-+
-+    const totalEntrada = entradaValor;
-+    const totalObra = duranteObraTotal;
-+    const totalReforcos = reforcosTotal;
-+    const totalFluxoSemFin = totalEntrada + totalObra + totalReforcos + chavesNoFluxo;
-+    const totalAteChaves = totalEntrada + totalObra + totalReforcos;
++    const totalFluxoSemFin = entradaValor + duranteObraTotal + reforcosTotal + (chavesFinanciado ? 0 : chavesTotal);
++    const totalAteChaves = entradaValor + duranteObraTotal + reforcosTotal;
  
 -    const recursosCliente = 0;
 -    const saldoACompor = Math.max(0, valorInvestidoReal);
-+    const valorInvestidoReal = totalEntrada + totalObra + totalReforcos + (chavesFinanciado ? 0 : chavesTotal);
++    const valorInvestidoReal = totalFluxoSemFin;
 +    const saldoACompor = Math.max(0, total - valorInvestidoReal);
  
 -    const precoM2 = (Number(data.area || 0) > 0) ? total / Number(data.area) : 0;
-+    const precoM2 = Number(data.area || 0) > 0 ? total / Number(data.area) : 0;
++    const precoM2 = Number(data.area) > 0 ? total / Number(data.area) : 0;
  
 -    // cronograma (datas) – respeitando entrada, obra, REFORÇOS ANTES das chaves
-     const hoje = new Date();
+-    const hoje = new Date();
 -    const schedule = [];
-+    const scheduleBase = [];
++    const baseDateRaw = data.date ? new Date(data.date) : new Date();
++    const baseDate = Number.isFinite(baseDateRaw.getTime()) ? baseDateRaw : new Date();
++    const addMonths = (date, months) => {
++      const d = new Date(date.getTime());
++      d.setMonth(d.getMonth() + months);
++      return d;
++    };
  
 -    // Entradas
 -    for (let i = 1; i <= entradaParcelas; i++) {
 -      const d = new Date(hoje); d.setMonth(d.getMonth() + (i - 1));
 -      schedule.push({ tipo: entradaParcelas === 1 ? `Entrada (ato)` : `Entrada ${i}/${entradaParcelas}` , data: d, valor: entradaParcela });
-+    for (let i = 1; i <= entradaParcelas; i += 1) {
-+      const d = new Date(hoje);
-+      d.setMonth(d.getMonth() + (i - 1));
-+      scheduleBase.push({ tipo: entradaParcelas === 1 ? "Entrada (ato)" : `Entrada ${i}/${entradaParcelas}`, data: d, valor: entradaParcela });
++    const schedule = [];
++    for (let i = 0; i < entradaParcelas; i++) {
++      schedule.push({
++        tipo: entradaParcelas === 1 ? "Entrada (ato)" : `Entrada ${i + 1}/${entradaParcelas}`,
++        data: addMonths(baseDate, i),
++        valor: entradaParcela,
++      });
      }
 -    // Durante a obra
 -    for (let i = 1; i <= parcelasObra; i++) {
 -      const d = new Date(hoje); d.setMonth(d.getMonth() + i);
 -      schedule.push({ tipo: `Obra ${i}/${parcelasObra}`, data: d, valor: duranteObraParcela });
-+    for (let i = 1; i <= parcelasObra; i += 1) {
-+      const d = new Date(hoje);
-+      d.setMonth(d.getMonth() + i);
-+      scheduleBase.push({ tipo: `Obra ${i}/${parcelasObra}`, data: d, valor: duranteObraParcela });
++
++    for (let i = 0; i < parcelasObra; i++) {
++      schedule.push({
++        tipo: `Obra ${i + 1}/${parcelasObra}`,
++        data: addMonths(baseDate, entradaParcelas + i),
++        valor: duranteObraParcela,
++      });
      }
 -    // Reforços (posicionados durante a obra; não depois das chaves)
++
      if (qRef > 0 && vRef > 0) {
--      for (let i = 0; i < qRef; i++) {
-+      for (let i = 0; i < qRef; i += 1) {
-+        const d = new Date(hoje);
-         const mesDentroDaObra = Math.min(parcelasObra, 1 + i * freqRef);
+       for (let i = 0; i < qRef; i++) {
+-        const mesDentroDaObra = Math.min(parcelasObra, 1 + i * freqRef);
 -        const d = new Date(hoje); d.setMonth(d.getMonth() + mesDentroDaObra);
 -        schedule.push({ tipo: `Reforço ${i + 1}/${qRef}`, data: d, valor: vRef });
-+        d.setMonth(d.getMonth() + mesDentroDaObra);
-+        scheduleBase.push({ tipo: `Reforço ${i + 1}/${qRef}`, data: d, valor: vRef });
++        const deslocamento = entradaParcelas + Math.min(Math.max(parcelasObra - 1, 0), i * freqRef);
++        schedule.push({
++          tipo: `Reforço ${i + 1}/${qRef}`,
++          data: addMonths(baseDate, deslocamento),
++          valor: vRef,
++        });
        }
      }
 -    // Chaves
++
      if (data.chavesForma === "avista" && chavesTotal > 0) {
 -      const d = new Date(hoje); d.setMonth(d.getMonth() + parcelasObra + 1);
 -      schedule.push({ tipo: "Chaves (à vista)", data: d, valor: chavesTotal });
-+      const d = new Date(hoje);
-+      d.setMonth(d.getMonth() + parcelasObra + 1);
-+      scheduleBase.push({ tipo: "Chaves (à vista)", data: d, valor: chavesTotal });
++      schedule.push({
++        tipo: "Chaves (à vista)",
++        data: addMonths(baseDate, entradaParcelas + parcelasObra),
++        valor: chavesTotal,
++      });
      }
++
      if (data.chavesForma === "posConstrutora" && chavesTotal > 0) {
 -      const pcs = Number(data.chavesPosParcelas || 0);
 -      for (let i = 1; i <= pcs; i++) {
 -        const d = new Date(hoje); d.setMonth(d.getMonth() + parcelasObra + i);
 -        schedule.push({ tipo: `Pós-chaves ${i}/${pcs}` , data: d, valor: chavesTotal / Math.max(pcs, 1) });
-+      const pcs = Math.max(1, Number(data.chavesPosParcelas || 1));
-+      for (let i = 1; i <= pcs; i += 1) {
-+        const d = new Date(hoje);
-+        d.setMonth(d.getMonth() + parcelasObra + i);
-+        scheduleBase.push({ tipo: `Pós-chaves ${i}/${pcs}`, data: d, valor: chavesTotal / pcs });
++      const pcs = Math.max(1, Math.floor(Number(data.chavesPosParcelas || 0)));
++      const parcelaPos = chavesTotal / pcs;
++      for (let i = 0; i < pcs; i++) {
++        schedule.push({
++          tipo: `Pós-chaves ${i + 1}/${pcs}`,
++          data: addMonths(baseDate, entradaParcelas + parcelasObra + i + 1),
++          valor: parcelaPos,
++        });
        }
      }
  
 -    const entradaPercent = total > 0 ? (entradaValor / total) * 100 : 0;
 -    const duranteObraPercent = total > 0 ? (100 * duranteObraTotal) / total : 0;
-+    const scheduleOrdenado = scheduleBase.sort((a, b) => a.data - b.data);
-+    let acumulado = 0;
-+    const schedule = scheduleOrdenado.map((item, index) => {
-+      acumulado += item.valor;
-+      const perc = totalFluxoSemFin > 0 ? (acumulado / totalFluxoSemFin) * 100 : 0;
-+      return { ...item, index: index + 1, acumulado, perc };
-+    });
- 
+-
 -    const totalEntrada = entradaValor;
 -    const totalObra = duranteObraTotal;
 -    const totalReforcos = reforcosTotal;
@@ -279,8 +293,7 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -    const totalFinanciado = chavesFinanciado ? chavesTotal : 0;
 -    const totalFluxoSemFin = totalEntrada + totalObra + totalReforcos + (data.chavesForma === 'avista' ? chavesTotal : totalPosChaves);
 -    const totalAteChaves = totalEntrada + totalObra + totalReforcos;
-+    const entradaPercent = total > 0 ? (entradaValor / total) * 100 : 0;
-+    const duranteObraPercent = total > 0 ? (duranteObraTotal / total) * 100 : 0;
++    const scheduleOrdenado = schedule.sort((a, b) => a.data - b.data);
  
      return {
        total,
@@ -290,30 +303,30 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 +      entradaValor,
 +      entradaParcelas,
 +      entradaParcela,
-+      entradaPercent,
 +      duranteObraTotal,
 +      duranteObraParcela,
 +      duranteObraParcelas: parcelasObra,
-+      duranteObraPercent,
-+      reforcosTotal,
-+      qRef,
-+      vRef,
-+      freqRef,
 +      chavesTotal,
 +      chavesFinanciado,
-+      totalPosChaves,
-+      totalFinanciado,
-+      totalFluxoSemFin,
-+      totalAteChaves,
++      reforcosTotal,
 +      valorInvestidoReal,
 +      saldoACompor,
        precoM2,
 -      qRef, vRef, freqRef,
 -      totalEntrada, totalObra, totalReforcos, totalPosChaves, totalFinanciado, totalFluxoSemFin, totalAteChaves
-+      totalEntrada,
-+      totalObra,
-+      totalReforcos,
-+      schedule,
++      qRef,
++      vRef,
++      freqRef,
++      totalEntrada: entradaValor,
++      totalObra: duranteObraTotal,
++      totalReforcos: reforcosTotal,
++      totalPosChaves,
++      totalFinanciado,
++      totalFluxoSemFin,
++      totalAteChaves,
++      schedule: scheduleOrdenado,
++      entradaPercent: total > 0 ? (entradaValor / total) * 100 : 0,
++      duranteObraPercent: total > 0 ? (duranteObraTotal / total) * 100 : 0,
      };
    }, [data]);
  
@@ -321,43 +334,44 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
    const buildFluxosBase = (incluirChaves = true) => {
      const fluxos = [];
 -    // Entradas
--    for (let i = 0; i < valores.entradaParcelas; i++) fluxos.push(-valores.entradaParcela);
++
+     for (let i = 0; i < valores.entradaParcelas; i++) fluxos.push(-valores.entradaParcela);
 -    // Obra (cresce mês a mês)
--    for (let i = 0; i < valores.duranteObraParcelas; i++) fluxos.push(-valores.duranteObraParcela);
+     for (let i = 0; i < valores.duranteObraParcelas; i++) fluxos.push(-valores.duranteObraParcela);
 -    // Reforços entram DENTRO da obra (somados ao mês correspondente)
-+    for (let i = 0; i < valores.entradaParcelas; i += 1) fluxos.push(-valores.entradaParcela);
-+    for (let i = 0; i < valores.duranteObraParcelas; i += 1) fluxos.push(-valores.duranteObraParcela);
++
      if (valores.qRef > 0 && valores.vRef > 0) {
--      for (let i = 0; i < valores.qRef; i++) {
-+      for (let i = 0; i < valores.qRef; i += 1) {
-         const mesDentroDaObra = Math.min(valores.duranteObraParcelas, 1 + i * valores.freqRef);
+       for (let i = 0; i < valores.qRef; i++) {
+-        const mesDentroDaObra = Math.min(valores.duranteObraParcelas, 1 + i * valores.freqRef);
 -        const idx = valores.entradaParcelas + (mesDentroDaObra - 1); // 0-based
 -        if (idx >= 0 && idx < fluxos.length) fluxos[idx] += -valores.vRef; else {
-+        const idx = valores.entradaParcelas + (mesDentroDaObra - 1);
-+        if (idx >= 0 && idx < fluxos.length) fluxos[idx] += -valores.vRef;
-+        else {
-           while (fluxos.length <= idx) fluxos.push(0);
-           fluxos[idx] += -valores.vRef;
-         }
+-          while (fluxos.length <= idx) fluxos.push(0);
+-          fluxos[idx] += -valores.vRef;
+-        }
++        const idx = valores.entradaParcelas + Math.min(Math.max(valores.duranteObraParcelas - 1, 0), i * valores.freqRef);
++        while (fluxos.length <= idx) fluxos.push(0);
++        fluxos[idx] -= valores.vRef;
        }
      }
 -    // Chaves
++
      if (incluirChaves) {
-       if (data.chavesForma === "avista") fluxos.push(-valores.chavesTotal);
+-      if (data.chavesForma === "avista") fluxos.push(-valores.chavesTotal);
 -      else if (data.chavesForma === "posConstrutora") {
 -        const pcs = Number(data.chavesPosParcelas || 0);
 -        for (let i = 0; i < pcs; i++) fluxos.push(-(valores.chavesTotal / Math.max(pcs, 1)));
--      } else {
++      if (data.chavesForma === "avista") {
++        fluxos.push(-valores.chavesTotal);
++      } else if (data.chavesForma === "posConstrutora") {
++        const pcs = Math.max(1, Math.floor(Number(data.chavesPosParcelas || 0)));
++        const parcelaPos = valores.chavesTotal / pcs;
++        for (let i = 0; i < pcs; i++) fluxos.push(-parcelaPos);
+       } else {
 -        // financiamento: não entra como saída de caixa do investidor
--        for (let i = 0; i < 12; i++) fluxos.push(0);
-+      if (data.chavesForma === "posConstrutora") {
-+        const pcs = Math.max(1, Number(data.chavesPosParcelas || 1));
-+        for (let i = 0; i < pcs; i += 1) fluxos.push(-(valores.chavesTotal / pcs));
-+      }
-+      if (data.chavesForma === "financiamento") {
-+        for (let i = 0; i < 12; i += 1) fluxos.push(0);
+         for (let i = 0; i < 12; i++) fluxos.push(0);
        }
      }
++
      return fluxos;
    };
  
@@ -375,8 +389,10 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 +    const roas = valores.valorInvestidoReal > 0 ? (lucro / valores.valorInvestidoReal) * 100 : 0;
      const fluxos = buildFluxosBase(true);
      fluxos.push(valorFinal);
-     const tir = calcularTIR(fluxos);
-     const tirAnual = (Math.pow(1 + tir / 100, 12) - 1) * 100;
+-    const tir = calcularTIR(fluxos);
+-    const tirAnual = (Math.pow(1 + tir / 100, 12) - 1) * 100;
++    const tirMensal = calcularTIR(fluxos);
++    const tirAnual = tirMensal ? (Math.pow(1 + tirMensal / 100, 12) - 1) * 100 : 0;
      return { valorFinal, lucro, roi, roas, tir: tirAnual, prazo: anos };
    }, [valores, data]);
  
@@ -400,7 +416,7 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -    const mesesOperacao = 5 * 12; // 5 anos fixos
 +    const mesesOperacao = 5 * 12;
      const rendaAcumulada = aluguelLiquido * mesesOperacao;
- 
+-
      const retornoTotal = patrimonioAcrescido + rendaAcumulada;
 -    const roi = (retornoTotal / valores.total) * 100;
 -    const roas = (retornoTotal / valores.valorInvestidoReal) * 100;
@@ -408,13 +424,14 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 +    const roas = valores.valorInvestidoReal > 0 ? (retornoTotal / valores.valorInvestidoReal) * 100 : 0;
  
      const fluxos = buildFluxosBase(true);
--    for (let i = 0; i < mesesOperacao; i++) fluxos.push(aluguelLiquido);
-+    for (let i = 0; i < mesesOperacao; i += 1) fluxos.push(aluguelLiquido);
+     for (let i = 0; i < mesesOperacao; i++) fluxos.push(aluguelLiquido);
      fluxos.push(valorFinal);
--
-     const tir = calcularTIR(fluxos);
-     const tirAnual = (Math.pow(1 + tir / 100, 12) - 1) * 100;
++    const tirMensal = calcularTIR(fluxos);
++    const tirAnual = tirMensal ? (Math.pow(1 + tirMensal / 100, 12) - 1) * 100 : 0;
  
+-    const tir = calcularTIR(fluxos);
+-    const tirAnual = (Math.pow(1 + tir / 100, 12) - 1) * 100;
+-
 -    return { valorFinal, patrimonioAcrescido, adrDiaria, receitaMensalBruta, aluguelLiquido, rendaAcumulada, retornoTotal, roi, roas, tir: tirAnual, prazoTotal: anosEntrega + 5 };
 +    return {
 +      valorFinal,
@@ -433,22 +450,29 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
  
 -  // Handlers
    const handle = (k) => (e) => setData((d) => ({ ...d, [k]: e.target.value }));
-   const handleNumeric = (k) => (e) => setData((d) => ({ ...d, [k]: currencyToNumber(e.target.value) }));
+-  const handleNumeric = (k) => (e) => setData((d) => ({ ...d, [k]: currencyToNumber(e.target.value) }));
++  const handleNumeric = (k) => (e) => {
++    const num = Math.max(0, currencyToNumber(e.target.value));
++    setData((d) => ({ ...d, [k]: num }));
++  };
    const handlePercent = (k) => (e) => {
-     const num = parseFloat((e.target.value + "").replace(",", "."));
+-    const num = parseFloat((e.target.value + "").replace(",", "."));
 -    setData((d) => ({ ...d, [k]: isNaN(num) ? 0 : num }));
-+    setData((d) => ({ ...d, [k]: Number.isNaN(num) ? 0 : num }));
++    const raw = parseFloat((e.target.value + "").replace(",", "."));
++    const num = Number.isFinite(raw) ? Math.max(0, raw) : 0;
++    setData((d) => ({ ...d, [k]: num }));
    };
  
 -  /********************
 -   * PDF multipágina sem zoom extra (slicing em A4)
 -   ********************/
++  const recalc = () => setData((d) => ({ ...d }));
++
    const savePDF = async () => {
      await ensurePdfLibs();
      const { jsPDF } = window.jspdf;
      const node = resultRef.current;
-+    if (!node) return;
- 
+-
 -    // Força largura exata da página virtual para captura perfeita
      const originalWidth = node.style.width;
 -    node.style.width = "794px"; // A4 a ~96dpi
@@ -471,19 +495,29 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
        sliceCanvas.width = canvas.width;
        sliceCanvas.height = Math.min(pageHeightPx, canvas.height - position);
        const sliceCtx = sliceCanvas.getContext("2d");
-       sliceCtx.drawImage(canvas, 0, position, canvas.width, sliceCanvas.height, 0, 0, canvas.width, sliceCanvas.height);
+-      sliceCtx.drawImage(canvas, 0, position, canvas.width, sliceCanvas.height, 0, 0, canvas.width, sliceCanvas.height);
++      sliceCtx.drawImage(
++        canvas,
++        0,
++        position,
++        canvas.width,
++        sliceCanvas.height,
++        0,
++        0,
++        canvas.width,
++        sliceCanvas.height
++      );
        const sliceData = sliceCanvas.toDataURL("image/png");
- 
+-
        if (pageIndex > 0) pdf.addPage();
        pdf.addImage(sliceData, "PNG", 0, 0, imgWidth, (sliceCanvas.height * imgWidth) / canvas.width);
- 
+-
        position += pageHeightPx;
--      pageIndex++;
-+      pageIndex += 1;
+       pageIndex++;
      }
  
      node.style.width = originalWidth || "";
- 
+-
      const file = `Proposta_Alvo_${(data.cliente || "cliente").replace(/\s+/g, "_")}.pdf`;
      pdf.save(file);
    };
@@ -493,17 +527,38 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
    const fillExample = () => setData(sample);
    const clearAll = () => setData({});
  
++  const resumoFluxo = [
++    { label: "Entrada", valor: valores.totalEntrada },
++    { label: "Durante a obra", valor: valores.totalObra },
++    { label: "Reforços", valor: valores.totalReforcos },
++    data.chavesForma === "avista"
++      ? { label: "Chaves (à vista)", valor: valores.chavesTotal }
++      : data.chavesForma === "posConstrutora"
++      ? { label: "Pós-chaves", valor: valores.totalPosChaves }
++      : null,
++  ].filter(Boolean);
++
++  const resumoKPIs = [
++    { title: "Valor do imóvel", value: brl(valores.total) },
++    { title: "Investimento real", value: brl(valores.valorInvestidoReal) },
++    { title: "Fluxo total (cliente)", value: brl(valores.totalFluxoSemFin) },
++    valores.totalPosChaves ? { title: "Pós-chaves", value: brl(valores.totalPosChaves) } : null,
++    valores.totalFinanciado ? { title: "Financiado (banco)", value: brl(valores.totalFinanciado) } : null,
++    { title: "Saldo a compor", value: brl(valores.saldoACompor), highlight: true },
++  ].filter(Boolean);
++
    return (
      <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
 -      {/* Topbar */}
-       <div className="sticky top-0 z-40 backdrop-blur border-b bg-white/80">
+-      <div className="sticky top-0 z-40 backdrop-blur border-b bg-white/80">
++      <header className="sticky top-0 z-40 backdrop-blur border-b bg-white/80">
          <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
            <AlvoLogo size={36} />
            <div className="flex-1">
              <h1 className="text-xl font-semibold">Alvo Propostas</h1>
 -            <p className="text-xs text-gray-500">Página {step === "setup" ? "de Edição" : "da Proposta"} · PDF multipágina (corrigido)</p>
 +            <p className="text-xs text-gray-500">
-+              Página {step === "setup" ? "de Edição" : "da Proposta"} · PDF multipágina alinhado
++              Página {step === "setup" ? "de Edição" : "da Proposta"} · PDF multipágina A4
 +            </p>
            </div>
            <div className="flex items-center gap-2">
@@ -515,6 +570,11 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 +            <button onClick={clearAll} className="px-3 py-2 rounded-2xl bg-white shadow-sm border text-sm">
 +              Limpar
 +            </button>
++            {step === "setup" && (
++              <button onClick={recalc} className="px-3 py-2 rounded-2xl bg-white shadow-sm border text-sm">
++                Recalcular
++              </button>
++            )}
              {step === "resultado" ? (
                <>
 -                <button onClick={() => setStep("setup")} className="px-3 py-2 rounded-2xl bg-white shadow-sm border text-sm">Voltar ao Setup</button>
@@ -543,12 +603,13 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
              )}
            </div>
          </div>
-       </div>
+-      </div>
++      </header>
  
        {step === "setup" ? (
 -        /* ---------- SETUP: SINGLE COLUMN (rolagem contínua) ---------- */
 -        <div className="mx-auto max-w-7xl p-6 space-y-6">
-+        <div className="mx-auto max-w-7xl px-6 py-8 space-y-6">
++        <main className="mx-auto max-w-7xl p-6 space-y-6">
            <Card title="1) Empresa">
              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                <Input label="Empresa" value={data.company || ""} onChange={handle("company")} />
@@ -556,7 +617,13 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
                <Input label="Consultor" value={data.consultor || ""} onChange={handle("consultor")} />
                <Input label="Telefone" value={data.phone || ""} onChange={handle("phone")} />
                <Input label="E-mail" value={data.email || ""} onChange={handle("email")} />
-               <Input label="Site (URL)" value={data.siteUrl || ""} onChange={handle("siteUrl")} placeholder="https://alvobr.com.br" />
+-              <Input label="Site (URL)" value={data.siteUrl || ""} onChange={handle("siteUrl")} placeholder="https://alvobr.com.br" />
++              <Input
++                label="Site (URL)"
++                value={data.siteUrl || ""}
++                onChange={handle("siteUrl")}
++                placeholder="https://alvobr.com.br"
++              />
              </div>
            </Card>
  
@@ -566,6 +633,11 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
                <Input label="Telefone" value={data.clientePhone || ""} onChange={handle("clientePhone")} />
 -              <Input label="E-mail" value={data.clienteEmail || ""} onChange={handle("clienteEmail")} /></div>
 +              <Input label="E-mail" value={data.clienteEmail || ""} onChange={handle("clienteEmail")} />
++              <Input
++                label="Recursos próprios (R$)"
++                value={data.recursosCliente ?? ""}
++                onChange={handleNumeric("recursosCliente")}
++              />
 +            </div>
            </Card>
  
@@ -576,8 +648,10 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
                <Input label="Construtora" value={data.construtora || ""} onChange={handle("construtora")} />
                <Input label="Tipo" value={data.tipo || ""} onChange={handle("tipo")} />
                <Input label="Área (m²)" value={data.area ?? ""} onChange={handleNumeric("area")} />
-               <Input label="Vagas de garagem" value={data.vagas ?? ""} onChange={handleNumeric("vagas")} />
-               <Input label="Entrega (texto)" value={data.entrega || ""} onChange={handle("entrega")} />
+-              <Input label="Vagas de garagem" value={data.vagas ?? ""} onChange={handleNumeric("vagas")} />
+-              <Input label="Entrega (texto)" value={data.entrega || ""} onChange={handle("entrega")} />
++              <Input label="Vagas" value={data.vagas ?? ""} onChange={handleNumeric("vagas")} />
++              <Input label="Entrega" value={data.entrega || ""} onChange={handle("entrega")} />
              </div>
            </Card>
  
@@ -585,55 +659,83 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
              <div className="space-y-4">
 -              {/* Valor total */}
                <div className="rounded-xl border p-3 bg-slate-50">
-                 <p className="text-sm font-semibold mb-2">Valor do Imóvel</p>
+-                <p className="text-sm font-semibold mb-2">Valor do Imóvel</p>
 -                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 -                  <Input label="Valor total do imóvel (R$)" value={data.valorTotal ?? ""} onChange={handleNumeric("valorTotal")} />
 -                </div>
-+                <Input label="Valor total do imóvel (R$)" value={data.valorTotal ?? ""} onChange={handleNumeric("valorTotal")} />
++                <p className="text-sm font-semibold mb-2">Valor do imóvel</p>
++                <Input label="Valor total (R$)" value={data.valorTotal ?? ""} onChange={handleNumeric("valorTotal")} />
                </div>
  
 -              {/* Entrada (NOMINAL) */}
                <div className="rounded-xl border p-3 bg-slate-50">
-                 <p className="text-sm font-semibold mb-2">Entrada (nominal)</p>
+-                <p className="text-sm font-semibold mb-2">Entrada (nominal)</p>
++                <p className="text-sm font-semibold mb-2">Entrada</p>
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                   <Input label="Total de Entrada (R$)" value={data.entradaValor ?? ""} onChange={handleNumeric("entradaValor")} />
-                   <Input label="Parcelas de entrada" value={data.entradaParcelas ?? ""} onChange={handleNumeric("entradaParcelas")} />
+-                  <Input label="Total de Entrada (R$)" value={data.entradaValor ?? ""} onChange={handleNumeric("entradaValor")} />
+-                  <Input label="Parcelas de entrada" value={data.entradaParcelas ?? ""} onChange={handleNumeric("entradaParcelas")} />
 -                  <div className="text-xs text-gray-600">Parcela estimada:<br/><strong>{brl((data.entradaValor||0)/Math.max(1, data.entradaParcelas||1))}</strong></div>
++                  <Input label="Total de entrada (R$)" value={data.entradaValor ?? ""} onChange={handleNumeric("entradaValor")} />
++                  <Input
++                    label="Parcelas de entrada"
++                    value={data.entradaParcelas ?? ""}
++                    onChange={handleNumeric("entradaParcelas")}
++                  />
 +                  <div className="text-xs text-gray-600">
-+                    Parcela estimada:
-+                    <br />
-+                    <strong>{brl((data.entradaValor || 0) / Math.max(1, data.entradaParcelas || 1))}</strong>
++                    Parcela estimada:<br />
++                    <strong>{brl(valores.entradaParcela)}</strong>
 +                  </div>
                  </div>
                </div>
  
 -              {/* Durante a obra (NOMINAL) */}
                <div className="rounded-xl border p-3 bg-slate-50">
-                 <p className="text-sm font-semibold mb-2">Durante a obra (nominal)</p>
+-                <p className="text-sm font-semibold mb-2">Durante a obra (nominal)</p>
++                <p className="text-sm font-semibold mb-2">Durante a obra</p>
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                   <Input label="Parcela de obra (R$)" value={data.obraParcelaValor ?? ""} onChange={handleNumeric("obraParcelaValor")} />
-                   <Input label="Nº de parcelas de obra" value={data.duranteObraParcelas ?? ""} onChange={handleNumeric("duranteObraParcelas")} />
+-                  <Input label="Parcela de obra (R$)" value={data.obraParcelaValor ?? ""} onChange={handleNumeric("obraParcelaValor")} />
+-                  <Input label="Nº de parcelas de obra" value={data.duranteObraParcelas ?? ""} onChange={handleNumeric("duranteObraParcelas")} />
 -                  <div className="text-xs text-gray-600">Total em obra:<br/><strong>{brl((data.obraParcelaValor||0)*(data.duranteObraParcelas||0))}</strong></div>
++                  <Input
++                    label="Parcela de obra (R$)"
++                    value={data.obraParcelaValor ?? ""}
++                    onChange={handleNumeric("obraParcelaValor")}
++                  />
++                  <Input
++                    label="Nº de parcelas"
++                    value={data.duranteObraParcelas ?? ""}
++                    onChange={handleNumeric("duranteObraParcelas")}
++                  />
 +                  <div className="text-xs text-gray-600">
-+                    Total em obra:
-+                    <br />
-+                    <strong>{brl((data.obraParcelaValor || 0) * (data.duranteObraParcelas || 0))}</strong>
++                    Total em obra:<br />
++                    <strong>{brl(valores.duranteObraTotal)}</strong>
 +                  </div>
                  </div>
                </div>
  
 -              {/* REFORÇOS (ex-Balões) */}
                <div className="rounded-xl border p-3 bg-slate-50">
-                 <p className="text-sm font-semibold mb-2">Reforços (nominais)</p>
+-                <p className="text-sm font-semibold mb-2">Reforços (nominais)</p>
++                <p className="text-sm font-semibold mb-2">Reforços</p>
                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
                    <Input label="Valor do reforço (R$)" value={data.balaoValor ?? ""} onChange={handleNumeric("balaoValor")} />
-                   <Input label="Qtde de reforços" value={data.balaoQuantidade ?? ""} onChange={handleNumeric("balaoQuantidade")} />
-                   <Input label="Frequência (meses)" value={data.balaoFrequenciaMeses ?? ""} onChange={handleNumeric("balaoFrequenciaMeses")} />
+-                  <Input label="Qtde de reforços" value={data.balaoQuantidade ?? ""} onChange={handleNumeric("balaoQuantidade")} />
+-                  <Input label="Frequência (meses)" value={data.balaoFrequenciaMeses ?? ""} onChange={handleNumeric("balaoFrequenciaMeses")} />
++                  <Input
++                    label="Quantidade"
++                    value={data.balaoQuantidade ?? ""}
++                    onChange={handleNumeric("balaoQuantidade")}
++                  />
++                  <Input
++                    label="Frequência (meses)"
++                    value={data.balaoFrequenciaMeses ?? ""}
++                    onChange={handleNumeric("balaoFrequenciaMeses")}
++                  />
++                </div>
++                <div className="mt-2 text-xs text-gray-600">
++                  Total em reforços: <strong>{brl(valores.reforcosTotal)}</strong>
                  </div>
 -                <div className="mt-2 text-xs text-gray-600">Total em reforços: <strong>{brl((data.balaoValor||0)*(data.balaoQuantidade||0))}</strong></div>
-+                <div className="mt-2 text-xs text-gray-600">
-+                  Total em reforços: <strong>{brl((data.balaoValor || 0) * (data.balaoQuantidade || 0))}</strong>
-+                </div>
                </div>
  
 -              {/* Chaves (APENAS %) */}
@@ -646,17 +748,28 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -                      value={data.chavesForma} onChange={(e)=>setData(d=>({...d, chavesForma: e.target.value}))}>
 +                    <select
 +                      className="w-full px-3 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-+                      value={data.chavesForma}
++                      value={data.chavesForma || "financiamento"}
 +                      onChange={(e) => setData((d) => ({ ...d, chavesForma: e.target.value }))}
 +                    >
                        <option value="financiamento">Financiamento bancário</option>
                        <option value="avista">À vista na entrega</option>
-                       <option value="posConstrutora">Parcelado com a construtora (pós-chaves)</option>
+-                      <option value="posConstrutora">Parcelado com a construtora (pós-chaves)</option>
++                      <option value="posConstrutora">Parcelado (pós-chaves)</option>
                      </select>
                    </label>
-                   <Input label="Chaves (% do total)" value={data.chavesPercent ?? ""} onChange={handlePercent("chavesPercent")} />
+-                  <Input label="Chaves (% do total)" value={data.chavesPercent ?? ""} onChange={handlePercent("chavesPercent")} />
++                  <Input
++                    label="Chaves (% do total)"
++                    value={data.chavesPercent ?? ""}
++                    onChange={handlePercent("chavesPercent")}
++                  />
                    {data.chavesForma === "posConstrutora" && (
-                     <Input label="Parcelas pós-chaves" value={data.chavesPosParcelas ?? ""} onChange={handleNumeric("chavesPosParcelas")} />
+-                    <Input label="Parcelas pós-chaves" value={data.chavesPosParcelas ?? ""} onChange={handleNumeric("chavesPosParcelas")} />
++                    <Input
++                      label="Parcelas pós-chaves"
++                      value={data.chavesPosParcelas ?? ""}
++                      onChange={handleNumeric("chavesPosParcelas")}
++                    />
                    )}
                  </div>
 -                {/* resultados embaixo, como pedido */}
@@ -666,19 +779,20 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -                    <div>Valor a financiar (banco): <strong>{brl(valores.chavesTotal)}</strong></div>
 +                  {data.chavesForma !== "financiamento" && (
 +                    <div>
-+                      Valor das chaves (estimado): <strong>{brl(valores.chavesTotal)}</strong>
++                      Valor das chaves: <strong>{brl(valores.chavesTotal)}</strong>
 +                    </div>
-                   )}
--                  {data.chavesForma === 'posConstrutora' && (
--                    <div>Pos-chaves em {data.chavesPosParcelas||0}x de <strong>{brl((valores.chavesTotal/Math.max(1, data.chavesPosParcelas||1)))}</strong></div>
++                  )}
 +                  {data.chavesForma === "financiamento" && (
 +                    <div>
 +                      Valor a financiar (banco): <strong>{brl(valores.chavesTotal)}</strong>
 +                    </div>
-+                  )}
+                   )}
+-                  {data.chavesForma === 'posConstrutora' && (
+-                    <div>Pos-chaves em {data.chavesPosParcelas||0}x de <strong>{brl((valores.chavesTotal/Math.max(1, data.chavesPosParcelas||1)))}</strong></div>
 +                  {data.chavesForma === "posConstrutora" && (
 +                    <div>
-+                      Pós-chaves em {data.chavesPosParcelas || 0}x de <strong>{brl(valores.chavesTotal / Math.max(1, data.chavesPosParcelas || 1))}</strong>
++                      Pós-chaves em {Math.max(1, Number(data.chavesPosParcelas || 0))}x de {" "}
++                      <strong>{brl(valores.chavesTotal / Math.max(1, Number(data.chavesPosParcelas || 1)))}</strong>
 +                    </div>
                    )}
                  </div>
@@ -686,16 +800,23 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
  
 -              {/* Prazos + Short Stay */}
                <div className="rounded-xl border p-3 bg-slate-50">
-                 <p className="text-sm font-semibold mb-2">Prazos e Short Stay</p>
+-                <p className="text-sm font-semibold mb-2">Prazos e Short Stay</p>
++                <p className="text-sm font-semibold mb-2">Prazos e parâmetros</p>
                  <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                    <Input label="Prazo de obra (anos)" value={data.prazoObraAnos ?? ""} onChange={handleNumeric("prazoObraAnos")} />
                    <Input label="Valorização a.a. (%)" value={data.apreciacao ?? ""} onChange={handlePercent("apreciacao")} />
                    <Input label="ADR (R$)" value={data.adrDiaria ?? ""} onChange={handleNumeric("adrDiaria")} />
                    <Input label="Ocupação (%)" value={data.ocupacao ?? ""} onChange={handlePercent("ocupacao")} />
-                   <Input label="Custos operac. (%)" value={data.custosOperacionais ?? ""} onChange={handlePercent("custosOperacionais")} />
+-                  <Input label="Custos operac. (%)" value={data.custosOperacionais ?? ""} onChange={handlePercent("custosOperacionais")} />
++                  <Input
++                    label="Custos operacionais (%)"
++                    value={data.custosOperacionais ?? ""}
++                    onChange={handlePercent("custosOperacionais")}
++                  />
                  </div>
                </div>
--
++            </div>
+ 
 -              {/* Resumo do fluxo */}
 -              <div className="bg-white border rounded-2xl p-4 shadow-sm text-sm">
 -                <p className="font-semibold text-emerald-800 mb-2">Resumo</p>
@@ -713,7 +834,47 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -                <div className="mt-3 rounded-xl bg-slate-50 border p-3">
 -                  Investimento real: <strong>{brl(valores.valorInvestidoReal)}</strong><br />
 -                  Saldo a compor: <strong className="text-rose-700\">{brl(valores.saldoACompor)}</strong>
--                </div>
++            <div className="bg-white border rounded-2xl p-4 shadow-sm text-sm mt-4">
++              <p className="font-semibold text-emerald-800 mb-2">Resumo</p>
++              <ul className="space-y-1">
++                <li>
++                  {valores.entradaParcelas === 1 ? (
++                    <>
++                      Entrada (ato): <strong>{brl(valores.entradaValor)}</strong>
++                    </>
++                  ) : (
++                    <>
++                      Entrada: <strong>{brl(valores.entradaValor)}</strong> em <strong>{valores.entradaParcelas}x</strong> ({" "}
++                      {brl(valores.entradaParcela)}/parcela)
++                    </>
++                  )}
++                </li>
++                <li>
++                  Durante a obra: <strong>{brl(valores.duranteObraTotal)}</strong> em <strong>{valores.duranteObraParcelas}x</strong>{" "}
++                  ({brl(valores.duranteObraParcela)}/mês)
++                </li>
++                <li>
++                  Reforços: <strong>{brl(valores.reforcosTotal)}</strong>
++                  {valores.qRef ? ` (${valores.qRef} reforços de ${brl(valores.vRef)} a cada ${valores.freqRef}m)` : ""}
++                </li>
++                <li>
++                  Chaves: {data.chavesForma === "financiamento" ? (
++                    <strong>(financiado pelo banco)</strong>
++                  ) : data.chavesForma === "posConstrutora" ? (
++                    <>
++                      <strong>{brl(valores.chavesTotal)}</strong> em {Math.max(1, Number(data.chavesPosParcelas || 0))}x
++                    </>
++                  ) : (
++                    <>
++                      <strong>{brl(valores.chavesTotal)}</strong> (à vista)
++                    </>
++                  )}
++                </li>
++              </ul>
++              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
++                <div className="rounded-xl bg-slate-50 border p-3">
++                  Investimento real: <strong>{brl(valores.valorInvestidoReal)}</strong>
+                 </div>
 -                <div className="mt-3 rounded-xl bg-white border p-3\">
 -                  <p className="font-semibold mb-1\">Totais do fluxo</p>
 -                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2\">
@@ -722,65 +883,38 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -                    {data.chavesForma === 'financiamento' && (<div>Total financiado (banco): <strong>{brl(valores.totalFinanciado)}</strong></div>)}
 -                    <div>Subtotal até chaves: <strong>{brl(valores.totalAteChaves)}</strong></div>
 -                  </div>
--                </div>
--              </div>
++                <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
++                  Saldo a compor: <strong className="text-emerald-700">{brl(valores.saldoACompor)}</strong>
++                </div>
++              </div>
++              <div className="mt-3 rounded-xl bg-white border p-3">
++                <p className="font-semibold mb-1">Totais do fluxo</p>
++                <ul className="text-xs space-y-1">
++                  {resumoFluxo.map((item) => (
++                    <li key={item.label} className="flex justify-between">
++                      <span>{item.label}</span>
++                      <span className="font-medium">{brl(item.valor)}</span>
++                    </li>
++                  ))}
++                  {valores.totalFinanciado > 0 && (
++                    <li className="flex justify-between text-emerald-700">
++                      <span>Financiado (banco)</span>
++                      <span className="font-semibold">{brl(valores.totalFinanciado)}</span>
++                    </li>
++                  )}
++                </ul>
++                <div className="mt-2 text-xs text-gray-600">
++                  Fluxo total (cliente): <strong>{brl(valores.totalFluxoSemFin)}</strong>
+                 </div>
+               </div>
              </div>
            </Card>
- 
+-
 -          <div className="flex justify-end">
 -            <button onClick={gerarProposta} className="px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm">Gerar Proposta</button>
-+          <div className="bg-white border rounded-2xl p-5 shadow-sm text-sm">
-+            <p className="font-semibold text-emerald-800 mb-3">Resumo do fluxo</p>
-+            <ul className="space-y-1">
-+              <li>
-+                {valores.entradaParcelas === 1 ? (
-+                  <>
-+                    Entrada (ato): <strong>{brl(valores.entradaValor)}</strong>
-+                  </>
-+                ) : (
-+                  <>
-+                    Entrada: <strong>{brl(valores.entradaValor)}</strong> em <strong>{valores.entradaParcelas}x</strong> ({brl(valores.entradaParcela)}/parcela) — {pct(valores.entradaPercent)}
-+                  </>
-+                )}
-+              </li>
-+              <li>
-+                Durante a obra: <strong>{brl(valores.duranteObraTotal)}</strong> em <strong>{valores.duranteObraParcelas}x</strong> ({brl(valores.duranteObraParcela)}/mês) — {pct(valores.duranteObraPercent)}
-+              </li>
-+              <li>
-+                Reforços: <strong>{brl(valores.reforcosTotal)}</strong>{" "}
-+                {valores.qRef ? `(${valores.qRef} reforços de ${brl(valores.vRef)} a cada ${valores.freqRef}m)` : ""}
-+              </li>
-+              <li>
-+                Chaves: {data.chavesForma === "financiamento" ? (
-+                  <strong>(financ. banco)</strong>
-+                ) : (
-+                  <>
-+                    <strong>{brl(valores.chavesTotal)}</strong>{" "}
-+                    {data.chavesForma === "posConstrutora" ? `em ${data.chavesPosParcelas || 0}x` : "(à vista)"}
-+                  </>
-+                )}
-+              </li>
-+            </ul>
-+            <div className="mt-3 rounded-xl bg-slate-50 border p-3">
-+              Investimento real: <strong>{brl(valores.valorInvestidoReal)}</strong>
-+              <br />
-+              Saldo a compor: <strong className="text-rose-700">{brl(valores.saldoACompor)}</strong>
-+            </div>
-+            <div className="mt-3 rounded-xl bg-white border p-3">
-+              <p className="font-semibold mb-1">Totais do fluxo</p>
-+              <ul className="text-xs space-y-1">
-+                <li>Entrada: {brl(valores.totalEntrada)}</li>
-+                <li>Durante a obra: {brl(valores.totalObra)}</li>
-+                <li>Reforços: {brl(valores.totalReforcos)}</li>
-+                {data.chavesForma === "posConstrutora" && <li>Pós-chaves: {brl(valores.totalPosChaves)}</li>}
-+                {data.chavesForma === "financiamento" && <li>Financiado (banco): {brl(valores.totalFinanciado)}</li>}
-+                {data.chavesForma === "avista" && <li>Chaves à vista: {brl(valores.chavesTotal)}</li>}
-+                <li>Fluxo total (sem financiamento): {brl(valores.totalFluxoSemFin)}</li>
-+                <li>Total até chaves: {brl(valores.totalAteChaves)}</li>
-+              </ul>
-+            </div>
-           </div>
-         </div>
+-          </div>
+-        </div>
++        </main>
        ) : (
 -        /* ---------- RESULTADO: BLOCOS SIMÉTRICOS (vai para o PDF) ---------- */
 -        <div className="mx-auto max-w-7xl p-6">
@@ -794,19 +928,16 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -                  <p className="text-xs text-gray-500">{data.date} · {data.consultor}</p>
 -                  <p className="text-xs text-gray-500">{data.phone} · {data.email}</p>
 -                  {data.siteUrl && <a href={data.siteUrl} target="_blank" rel="noreferrer" className="text-[11px] text-blue-600 underline break-all">{data.siteUrl}</a>}
-+        <div className="mx-auto max-w-7xl px-6 py-10">
-+          <div ref={resultRef} className="paper mx-auto rounded-3xl bg-white shadow-2xl overflow-hidden">
-+            <section className="page px-12 py-10 space-y-10">
-+              <header className="flex flex-col gap-6">
-+                <div className="flex items-start justify-between gap-6">
-+                  <div>
-+                    <p className="text-xs uppercase tracking-wide text-gray-500">Proposta de Investimento Imobiliário</p>
-+                    <h2 className="text-3xl font-semibold text-slate-900">
-+                      {data.empreendimento || "Empreendimento"}
-+                    </h2>
-+                    <p className="text-sm text-gray-500">Emitido em {data.date || "—"}</p>
-+                  </div>
-+                  <AlvoLogo size={72} />
++        <main className="mx-auto max-w-7xl p-6">
++          <div ref={resultRef} className="paper mx-auto space-y-10">
++            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-8">
++              <div className="flex flex-wrap items-start gap-6">
++                <AlvoLogo size={72} />
++                <div className="flex-1">
++                  <h2 className="text-2xl font-semibold text-slate-800">Proposta de Investimento Imobiliário</h2>
++                  <p className="text-sm text-gray-500 mt-1">
++                    Elaborada por {data.company || "—"} · {data.consultor || "Consultor"}
++                  </p>
                  </div>
 -                <AlvoLogo size={64} />
 -              </div>
@@ -825,22 +956,7 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -                  {data.chavesForma === 'posConstrutora' && (<KPI title=\"Pós-chaves (total)\" value={brl(valores.totalPosChaves)} />)}
 -                  {data.chavesForma === 'financiamento' && (<KPI title=\"Financiado (banco)\" value={brl(valores.totalFinanciado)} />)}
 -                  <KPI title=\"Saldo a compor\" value={brl(valores.saldoACompor)} highlight />
-+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-+                  <div className="rounded-2xl border p-4 bg-slate-50">
-+                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Consultoria</p>
-+                    <p className="font-semibold text-slate-900">{data.company || "—"}</p>
-+                    <p>{data.consultor || "—"}</p>
-+                    <p>{data.phone || "—"}</p>
-+                    <p>{data.email || "—"}</p>
-+                    {data.siteUrl && <p className="text-emerald-700">{data.siteUrl}</p>}
-+                  </div>
-+                  <div className="rounded-2xl border p-4 bg-white">
-+                    <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Cliente</p>
-+                    <p className="font-semibold text-slate-900">{data.cliente || "—"}</p>
-+                    <p>{data.clientePhone || "—"}</p>
-+                    <p>{data.clienteEmail || "—"}</p>
-+                  </div>
-                 </div>
+-                </div>
 -                <div className="rounded-xl border p-4 bg-white\">
 -                  <p className="font-semibold mb-2\">Resumo do fluxo</p>
 -                  <ul className="space-y-1\">
@@ -849,64 +965,62 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -                    <li>Reforços: {brl(valores.reforcosTotal)} {valores.qRef ? `(${valores.qRef}× de ${brl(valores.vRef)} a cada ${valores.freqRef}m)` : ''}</li>
 -                    <li>Chaves: {data.chavesForma === 'financiamento' ? <strong>(financ. banco)</strong> : <><strong>{brl(valores.chavesTotal)}</strong> {data.chavesForma === 'posConstrutora' ? `em ${data.chavesPosParcelas || 0}x` : '(à vista)'}</>}</li>
 -                  </ul>
-+              </header>
-+
-+              <div className="space-y-4">
-+                <h3 className="text-lg font-semibold">Resumo Executivo</h3>
-+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-+                  <KPI title="Valor do imóvel" value={brl(valores.total)} />
-+                  <KPI title="Investimento real" value={brl(valores.valorInvestidoReal)} />
-+                  <KPI title="Fluxo total (sem financiamento)" value={brl(valores.totalFluxoSemFin)} />
-+                  {data.chavesForma === "posConstrutora" && <KPI title="Pós-chaves (total)" value={brl(valores.totalPosChaves)} />}
-+                  {data.chavesForma === "financiamento" && <KPI title="Financiado (banco)" value={brl(valores.totalFinanciado)} />}
-+                  <KPI title="Saldo a compor" value={brl(valores.saldoACompor)} highlight />
++                <div className="text-sm text-right text-gray-500">
++                  <p>Data: {formatDate(data.date)}</p>
++                  <p>Validade: {formatDate(data.validade)}</p>
++                  <p>Telefone: {data.phone || "—"}</p>
++                  <p>E-mail: {data.email || "—"}</p>
                  </div>
                </div>
-             </section>
+-            </section>
  
 -            {/* Bloco 1: Empresa & Cliente */}
 -            <section className="p-12 page page-break">
 -              <h3 className="font-semibold text-lg mb-3">1. Dados Gerais</h3>
 -              <div className="grid grid-cols-2 gap-8 text-[13px]">
-+            <section className="page page-break px-12 py-10 space-y-6 text-sm">
-+              <h3 className="text-lg font-semibold">1. Dados Gerais</h3>
-+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <div>
-                   <p className="font-semibold mb-2">Imobiliária / Corretor</p>
-                   <DataRow k="Empresa" v={data.company} />
-                   <DataRow k="Consultor" v={data.consultor} />
-                   <DataRow k="Telefone" v={data.phone} />
-                   <DataRow k="E-mail" v={data.email} />
-+                  <DataRow k="Site" v={data.siteUrl} />
-                 </div>
-                 <div>
-                   <p className="font-semibold mb-2">Cliente</p>
+-                <div>
+-                  <p className="font-semibold mb-2">Imobiliária / Corretor</p>
+-                  <DataRow k="Empresa" v={data.company} />
+-                  <DataRow k="Consultor" v={data.consultor} />
+-                  <DataRow k="Telefone" v={data.phone} />
+-                  <DataRow k="E-mail" v={data.email} />
+-                </div>
+-                <div>
+-                  <p className="font-semibold mb-2">Cliente</p>
++              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++                <div className="rounded-2xl border bg-slate-50 p-4">
++                  <h3 className="text-sm font-semibold text-slate-600 mb-3">Cliente</h3>
                    <DataRow k="Nome" v={data.cliente} />
                    <DataRow k="Telefone" v={data.clientePhone} />
                    <DataRow k="E-mail" v={data.clienteEmail} />
 -                  </div>
-+                </div>
-               </div>
-             </section>
- 
+-              </div>
+-            </section>
+-
 -            {/* Bloco 2: Empreendimento */}
 -            <section className="p-12 page page-break">
 -              <h3 className="font-semibold text-lg mb-3">2. Empreendimento</h3>
 -              <div className="grid grid-cols-2 gap-8 text-[13px]">
-+            <section className="page page-break px-12 py-10 space-y-6 text-sm">
-+              <h3 className="text-lg font-semibold">2. Empreendimento</h3>
-+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <div>
+-                <div>
++                  <DataRow k="Recursos próprios" v={brl(data.recursosCliente)} />
++                </div>
++                <div className="rounded-2xl border bg-slate-50 p-4">
++                  <h3 className="text-sm font-semibold text-slate-600 mb-3">Empreendimento</h3>
                    <DataRow k="Nome" v={data.empreendimento} />
-                   <DataRow k="Local" v={data.endereco} />
+-                  <DataRow k="Local" v={data.endereco} />
++                  <DataRow k="Endereço" v={data.endereco} />
                    <DataRow k="Construtora" v={data.construtora} />
++                  <DataRow k="Tipologia" v={data.tipo} />
++                  <DataRow k="Área privativa" v={data.area ? `${data.area} m²` : "—"} />
++                  <DataRow k="Vagas" v={data.vagas ? `${data.vagas}` : "—"} />
                    <DataRow k="Entrega" v={data.entrega} />
-                 </div>
-                 <div>
-                   <DataRow k="Tipo" v={data.tipo} />
-                   <DataRow k="Área" v={data.area ? `${data.area} m²` : ""} />
-                   <DataRow k="Vagas de garagem" v={data.vagas ? String(data.vagas) : ""} />
-                   <DataRow k="Valor do m² (aprox.)" v={valores.precoM2 ? brl(valores.precoM2) : "—"} />
+-                </div>
+-                <div>
+-                  <DataRow k="Tipo" v={data.tipo} />
+-                  <DataRow k="Área" v={data.area ? `${data.area} m²` : ""} />
+-                  <DataRow k="Vagas de garagem" v={data.vagas ? String(data.vagas) : ""} />
+-                  <DataRow k="Valor do m² (aprox.)" v={valores.precoM2 ? brl(valores.precoM2) : "—"} />
++                  <DataRow k="Preço/m²" v={valores.precoM2 ? brl(valores.precoM2) : "—"} />
                  </div>
                </div>
              </section>
@@ -915,11 +1029,8 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -            <section className="p-12 page page-break">
 -              <h3 className="font-semibold text-lg mb-3">3. Condições Comerciais</h3>
 -              <div className="grid grid-cols-2 gap-8 text-[13px]">
-+            <section className="page page-break px-12 py-10 space-y-6 text-sm">
-+              <h3 className="text-lg font-semibold">3. Condições Comerciais</h3>
-+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                 <div>
-                   <DataRow k="Valor total" v={brl(valores.total)} />
+-                <div>
+-                  <DataRow k="Valor total" v={brl(valores.total)} />
 -                  <DataRow k={valores.entradaParcelas === 1 ? "Entrada (ato)" : "Entrada"}
 -                          v={valores.entradaParcelas === 1
 -                            ? `${brl(valores.entradaValor)}`
@@ -931,86 +1042,50 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -                ) : (
 -                  <DataRow k="Chaves" v={`${brl(valores.chavesTotal)}${data.chavesForma === 'posConstrutora' ? ` em ${data.chavesPosParcelas || 0}x` : ' (à vista)'}`} />
 -                )}
-+                  <DataRow
-+                    k={valores.entradaParcelas === 1 ? "Entrada (ato)" : "Entrada"}
-+                    v={
-+                      valores.entradaParcelas === 1
-+                        ? `${brl(valores.entradaValor)}`
-+                        : `${brl(valores.entradaValor)} em ${valores.entradaParcelas}x (${brl(valores.entradaParcela)}/parcela)`
-+                    }
-+                  />
-+                  <DataRow
-+                    k="Durante a obra"
-+                    v={`${brl(valores.duranteObraTotal)} em ${valores.duranteObraParcelas || 0}x (${brl(valores.duranteObraParcela)}/mês)`}
-+                  />
-+                  <DataRow
-+                    k="Reforços"
-+                    v={`${brl(valores.reforcosTotal)}${valores.qRef ? ` · ${valores.qRef}x de ${brl(valores.vRef)} a cada ${valores.freqRef}m` : ""}`}
-+                  />
-+                  {data.chavesForma === "financiamento" ? (
-+                    <DataRow k="Financiado (banco)" v={brl(valores.chavesTotal)} />
-+                  ) : (
-+                    <DataRow
-+                      k="Chaves"
-+                      v={`${brl(valores.chavesTotal)}${
-+                        data.chavesForma === "posConstrutora" ? ` em ${data.chavesPosParcelas || 0}x` : " (à vista)"
-+                      }`}
-+                    />
-+                  )}
-                 </div>
-                 <div>
-                   <p className="font-semibold mb-2">Resumo Financeiro</p>
-                   <DataRow k="Investimento real" v={brl(valores.valorInvestidoReal)} />
-                   <DataRow k="Saldo a compor" v={brl(valores.saldoACompor)} />
+-                </div>
+-                <div>
+-                  <p className="font-semibold mb-2">Resumo Financeiro</p>
+-                  <DataRow k="Investimento real" v={brl(valores.valorInvestidoReal)} />
+-                  <DataRow k="Saldo a compor" v={brl(valores.saldoACompor)} />
 -
 -                  <div className="mt-4"><p className="font-semibold mb-2">Totais do Fluxo</p>
-+                  <div className="mt-4">
-+                    <p className="font-semibold mb-2">Totais do fluxo</p>
-                     <DataRow k="Total entrada" v={brl(valores.totalEntrada)} />
-                     <DataRow k="Total durante a obra" v={brl(valores.totalObra)} />
-                     <DataRow k="Total reforços" v={brl(valores.totalReforcos)} />
+-                    <DataRow k="Total entrada" v={brl(valores.totalEntrada)} />
+-                    <DataRow k="Total durante a obra" v={brl(valores.totalObra)} />
+-                    <DataRow k="Total reforços" v={brl(valores.totalReforcos)} />
 -                    {data.chavesForma === 'posConstrutora' && (<DataRow k="Pós-chaves (total)" v={brl(valores.totalPosChaves)} />)}
 -                    {data.chavesForma === 'financiamento' && (<DataRow k="Total financiado (banco)" v={brl(valores.totalFinanciado)} />)}
 -                    {data.chavesForma === 'avista' && (<DataRow k="Chaves à vista" v={brl(valores.chavesTotal)} />)}
-+                    {data.chavesForma === "posConstrutora" && <DataRow k="Pós-chaves (total)" v={brl(valores.totalPosChaves)} />}
-+                    {data.chavesForma === "financiamento" && <DataRow k="Total financiado (banco)" v={brl(valores.totalFinanciado)} />}
-+                    {data.chavesForma === "avista" && <DataRow k="Chaves à vista" v={brl(valores.chavesTotal)} />}
-                     <DataRow k="TOTAL do fluxo (sem financiamento)" v={brl(valores.totalFluxoSemFin)} />
-                     <DataRow k="Subtotal até chaves" v={brl(valores.totalAteChaves)} />
-                   </div>
-                 </div>
+-                    <DataRow k="TOTAL do fluxo (sem financiamento)" v={brl(valores.totalFluxoSemFin)} />
+-                    <DataRow k="Subtotal até chaves" v={brl(valores.totalAteChaves)} />
+-                  </div>
+-                </div>
++            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
++              <h3 className="text-lg font-semibold text-slate-700">Resumo Executivo</h3>
++              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
++                {resumoKPIs.map((kpi) => (
++                  <KPI key={kpi.title} title={kpi.title} value={kpi.value} highlight={kpi.highlight} />
++                ))}
                </div>
 -
-               <details className="mt-4">
+-              <details className="mt-4">
 -                <summary className="cursor-pointer text-[13px] font-medium">Ver cronograma detalhado</summary>
-+                <summary className="cursor-pointer text-[13px] font-medium">Ver cronograma resumido</summary>
-                 <div className="mt-2 max-h-72 overflow-auto text-[12px]">
-                   <table className="w-full">
+-                <div className="mt-2 max-h-72 overflow-auto text-[12px]">
+-                  <table className="w-full">
 -                    <thead><tr className="text-left text-gray-500 border-b"><th className="py-2">Parcela</th><th>Data</th><th>Valor</th></tr></thead>
-+                    <thead>
-+                      <tr className="text-left text-gray-500 border-b">
-+                        <th className="py-2">Parcela</th>
-+                        <th>Data</th>
-+                        <th className="text-right">Valor</th>
-+                      </tr>
-+                    </thead>
-                     <tbody>
+-                    <tbody>
 -                      {valores.schedule
 -                        .sort((a,b)=>a.data - b.data)
 -                        .map((p, i) => (
 -                        <tr key={i} className="border-b last:border-0">
-+                      {valores.schedule.map((p) => (
-+                        <tr key={p.index} className="border-b last:border-0">
-                           <td className="py-2">{p.tipo}</td>
-                           <td>{p.data.toLocaleDateString("pt-BR")}</td>
+-                          <td className="py-2">{p.tipo}</td>
+-                          <td>{p.data.toLocaleDateString("pt-BR")}</td>
 -                          <td className="font-medium">{brl(p.valor)}</td>
-+                          <td className="text-right font-medium">{brl(p.valor)}</td>
-                         </tr>
-                       ))}
-                     </tbody>
-                   </table>
-                 </div>
-               </details>
+-                        </tr>
+-                      ))}
+-                    </tbody>
+-                  </table>
+-                </div>
+-              </details>
              </section>
  
 -            {/* 4. Fluxo de Pagamento (planilha) */}
@@ -1083,7 +1158,53 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -                    <li>• Custos: {data.custosOperacionais}%</li>
 -                    <li>• <strong>Líquido: {brl(cenario2.aluguelLiquido)}/mês</strong></li>
 -                  </ul>
--                </div>
++            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
++              <h3 className="text-lg font-semibold text-slate-700">Condições Comerciais</h3>
++              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
++                <div className="rounded-2xl border bg-slate-50 p-4 space-y-2 text-sm">
++                  {resumoFluxo.map((item) => (
++                    <div key={item.label} className="flex justify-between">
++                      <span>{item.label}</span>
++                      <span className="font-semibold">{brl(item.valor)}</span>
++                    </div>
++                  ))}
++                  {valores.totalFinanciado > 0 && (
++                    <div className="flex justify-between text-emerald-700 font-semibold">
++                      <span>Financiado (banco)</span>
++                      <span>{brl(valores.totalFinanciado)}</span>
++                    </div>
++                  )}
++                  <div className="pt-2 border-t text-sm text-gray-600 flex justify-between">
++                    <span>Fluxo total (cliente)</span>
++                    <span className="font-semibold">{brl(valores.totalFluxoSemFin)}</span>
++                  </div>
++                </div>
++                <div className="rounded-2xl border bg-slate-50 p-4 text-sm space-y-2">
++                  <div className="flex justify-between">
++                    <span>Investimento até as chaves</span>
++                    <strong>{brl(valores.totalAteChaves)}</strong>
++                  </div>
++                  <div className="flex justify-between">
++                    <span>Investimento real</span>
++                    <strong>{brl(valores.valorInvestidoReal)}</strong>
++                  </div>
++                  {valores.totalPosChaves > 0 && (
++                    <div className="flex justify-between">
++                      <span>Parcelas pós-chaves</span>
++                      <strong>{brl(valores.totalPosChaves)}</strong>
++                    </div>
++                  )}
++                  {valores.totalFinanciado > 0 && (
++                    <div className="flex justify-between">
++                      <span>Financiado (banco)</span>
++                      <strong>{brl(valores.totalFinanciado)}</strong>
++                    </div>
++                  )}
++                  <div className="flex justify-between text-emerald-700 font-semibold">
++                    <span>Saldo a compor</span>
++                    <span>{brl(valores.saldoACompor)}</span>
++                  </div>
+                 </div>
 -                <table className="w-full">
 -                  <tbody>
 -                    <TR label="Renda em 5 anos" value={brl(cenario2.rendaAcumulada)} />
@@ -1095,9 +1216,9 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -                    <TR label="TIR (a.a.)" value={pct(cenario2.tir)} />
 -                  </tbody>
 -                </table>
--              </div>
--            </section>
--
+               </div>
+             </section>
+ 
 -            {/* rodapé / letras pequenas */}
 -            <section className="p-12 page page-break">
 -              <p className="text-[11px] text-gray-500 italic leading-5">
@@ -1190,8 +1311,8 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -            {/* 4. Fluxo de Pagamento (planilha) */}
 -            <section className="p-12 page page-break">
 -              <h3 className="font-semibold text-lg mb-3">4. Fluxo de Pagamento (planilha)</h3>
-+            <section className="page page-break px-12 py-10 text-sm">
-+              <h3 className="text-lg font-semibold mb-3">4. Fluxo de Pagamento (planilha)</h3>
++            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
++              <h3 className="text-lg font-semibold text-slate-700">Fluxo de Pagamento</h3>
                <div className="rounded-xl border overflow-hidden">
                  <table className="w-full text-[12px]">
                    <thead>
@@ -1214,27 +1335,26 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -                          valores.totalFluxoSemFin > 0
 -                            ? (acumulado / valores.totalFluxoSemFin) * 100
 -                            : 0;
--                        return (
++                    {(() => {
++                      let acumulado = 0;
++                      return valores.schedule.map((p, i) => {
++                        acumulado += p.valor;
++                        const perc = valores.totalFluxoSemFin > 0 ? (acumulado / valores.totalFluxoSemFin) * 100 : 0;
+                         return (
 -                          <tr key={i} className="border-b last:border-0">
--                            <td className="p-2">{i + 1}</td>
--                            <td className="p-2">{p.data.toLocaleDateString("pt-BR")}</td>
--                            <td className="p-2">{p.tipo}</td>
++                          <tr key={`${p.tipo}-${i}`} className="border-b last:border-0">
+                             <td className="p-2">{i + 1}</td>
+                             <td className="p-2">{p.data.toLocaleDateString("pt-BR")}</td>
+                             <td className="p-2">{p.tipo}</td>
 -                            <td className="p-2 text-right">{brl(valor)}</td>
--                            <td className="p-2 text-right">{brl(acumulado)}</td>
--                            <td className="p-2 text-right">{perc.toFixed(2)}%</td>
--                          </tr>
--                        );
++                            <td className="p-2 text-right">{brl(p.valor)}</td>
+                             <td className="p-2 text-right">{brl(acumulado)}</td>
+                             <td className="p-2 text-right">{perc.toFixed(2)}%</td>
+                           </tr>
+                         );
 -                      })}
-+                    {valores.schedule.map((p) => (
-+                      <tr key={p.index} className="border-b last:border-0">
-+                        <td className="p-2">{p.index}</td>
-+                        <td className="p-2">{p.data.toLocaleDateString("pt-BR")}</td>
-+                        <td className="p-2">{p.tipo}</td>
-+                        <td className="p-2 text-right">{brl(p.valor)}</td>
-+                        <td className="p-2 text-right">{brl(p.acumulado)}</td>
-+                        <td className="p-2 text-right">{p.perc.toFixed(2)}%</td>
-+                      </tr>
-+                    ))}
++                      });
++                    })()}
                    </tbody>
                  </table>
                </div>
@@ -1242,16 +1362,16 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -                Fórmulas: Valor total = SOMA(Entrada + Obra + Reforços + (Chaves à vista ou
 -                Pós-chaves)). Acumulado(i) = Acumulado(i-1) + Valor(i). % do fluxo(i) =
 -                Acumulado(i) / Total do fluxo.
-+                Fórmulas: Valor total do fluxo = SOMA(Entrada + Obra + Reforços + (Chaves à vista ou Pós-chaves)). Acumulado(i) =
-+                Acumulado(i-1) + Valor(i). % do fluxo(i) = Acumulado(i) ÷ TotalFluxo × 100.
++                Fórmulas: Valor total = SOMA(Entrada + Obra + Reforços + (Chaves à vista ou Pós-chaves)). Acumulado(i) =
++                Acumulado(i-1) + Valor(i). % do fluxo(i) = Acumulado(i) / Total do fluxo.
                </p>
              </section>
  
 -            {/* 5. Cenários de Retorno */}
 -            <section className="p-12 page page-break">
 -              <h3 className="font-semibold text-lg mb-2">5. Cenário 1 — Revenda</h3>
-+            <section className="page page-break px-12 py-10 space-y-6 text-sm">
-+              <h3 className="text-lg font-semibold">5. Cenário 1 — Revenda</h3>
++            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
++              <h3 className="text-lg font-semibold text-slate-700">Cenário 1 — Revenda</h3>
                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-[13px]">
                  <table className="w-full">
                    <tbody>
@@ -1281,18 +1401,20 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
 -              <h3 className="font-semibold text-lg mb-2">
 -                6. Cenário 2 — Short Stay (5 anos após entrega)
 -              </h3>
-+            <section className="page page-break px-12 py-10 space-y-6 text-sm">
-+              <h3 className="text-lg font-semibold">6. Cenário 2 — Short Stay (5 anos após entrega)</h3>
-               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-[13px]">
-                 <div className="mb-3 p-3 bg-white rounded border text-[12px] leading-6">
+-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-[13px]">
+-                <div className="mb-3 p-3 bg-white rounded border text-[12px] leading-6">
++            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
++              <h3 className="text-lg font-semibold text-slate-700">Cenário 2 — Short Stay (5 anos)</h3>
++              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-[13px] space-y-3">
++                <div className="p-3 bg-white rounded border text-[12px] leading-6">
                    <p className="font-semibold mb-1">Parâmetros</p>
                    <ul className="space-y-1">
                      <li>• ADR: {brl(cenario2.adrDiaria)}</li>
--                    <li>
+                     <li>
 -                      • Ocupação: {data.ocupacao}% ≈{" "}
 -                      {Math.round(((data.ocupacao || 0) * 30) / 100)} diárias/mês
--                    </li>
-+                    <li>• Ocupação: {data.ocupacao}% ≈ {Math.round(((data.ocupacao || 0) * 30) / 100)} diárias/mês</li>
++                      • Ocupação: {data.ocupacao}% ≈ {Math.round(((data.ocupacao || 0) * 30) / 100)} diárias/mês
+                     </li>
                      <li>• Receita bruta: {brl(cenario2.receitaMensalBruta)}/mês</li>
                      <li>• Custos: {data.custosOperacionais}%</li>
                      <li>
@@ -1328,26 +1450,31 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
  
 -            {/* Rodapé */}
 -            <section className="p-12 page page-break">
-+            <section className="page page-break px-12 py-10 text-sm">
++            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-3">
                <p className="text-[11px] text-gray-500 italic leading-5">
 -                * Estimativas baseadas em projeções de mercado. ROI = retorno sobre o valor
 -                total; ROAS = retorno sobre o investimento real.
-+                * Estimativas baseadas em projeções de mercado. ROI = retorno sobre o valor total; ROAS = retorno sobre o investimento real.
++                * Estimativas baseadas em projeções de mercado. ROI = retorno sobre o valor total; ROAS = retorno sobre o
++                investimento real.
                </p>
-               <p className="text-[11px] text-gray-500 mt-3 leading-5">
+-              <p className="text-[11px] text-gray-500 mt-3 leading-5">
 -                * Formas de pagamento sujeitas a atualização por{" "}
 -                <strong>CUB (período de obras)</strong> e <strong>IGP-M + 1%</strong> após a
 -                entrega das chaves.
-+                * Formas de pagamento sujeitas a atualização por <strong>CUB (período de obras)</strong> e <strong>IGP-M + 1%</strong> após a entrega das chaves.
++              <p className="text-[11px] text-gray-500 leading-5">
++                * Formas de pagamento sujeitas a atualização por <strong>CUB (período de obras)</strong> e <strong>IGP-M + 1%</strong>
++                após a entrega das chaves.
                </p>
-               <p className="text-[11px] text-gray-500 mt-3 leading-5">
+-              <p className="text-[11px] text-gray-500 mt-3 leading-5">
 -                © {new Date().getFullYear()} Alvo BR — {data.company} · {data.phone} ·{" "}
 -                {data.email}
++              <p className="text-[11px] text-gray-500 leading-5">
 +                © {new Date().getFullYear()} Alvo BR — {data.company} · {data.phone} · {data.email}
                </p>
              </section>
            </div>
-         </div>
+-        </div>
++        </main>
        )}
  
        <style>{`
@@ -1372,8 +1499,15 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
  }
  
  /********************
-  * UI bits
+- * UI bits
++ * Helpers & UI
   ********************/
++const formatDate = (value) => {
++  if (!value) return "—";
++  const date = new Date(value);
++  return Number.isFinite(date.getTime()) ? date.toLocaleDateString("pt-BR") : "—";
++};
++
  function Card({ title, children }) {
    return (
      <div className="bg-white rounded-2xl shadow-sm border overflow-hidden ring-1 ring-slate-200">
@@ -1384,6 +1518,7 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
      </div>
    );
  }
++
  function Input({ label, value, onChange, placeholder }) {
    return (
      <label className="block">
@@ -1393,19 +1528,22 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
          value={value ?? ""}
          onChange={onChange}
          placeholder={placeholder}
-+        min={0}
        />
      </label>
    );
  }
++
  function DataRow({ k, v }) {
    return (
-     <div className="flex gap-2 py-2 border-b border-dashed border-gray-100">
-       <div className="w-44 text-gray-500">{k}</div>
+-    <div className="flex gap-2 py-2 border-b border-dashed border-gray-100">
+-      <div className="w-44 text-gray-500">{k}</div>
++    <div className="flex gap-2 py-2 border-b border-dashed border-gray-200 text-sm">
++      <div className="w-36 text-gray-500">{k}</div>
        <div className="flex-1 font-medium">{v || "—"}</div>
      </div>
    );
  }
++
  function KPI({ title, value, highlight }) {
    return (
      <div className={`rounded-xl border p-3 ${highlight ? "bg-emerald-50 border-emerald-200" : "bg-white"}`}>
@@ -1414,8 +1552,15 @@ index 21b136ac4a861de7c7e21dfeffdeb49798b46f80..bca1899542edaf5df0f307d59a6ef7fa
      </div>
    );
  }
++
  function TR({ label, value }) {
    return (
      <tr>
        <td className="p-3 text-gray-600">{label}</td>
        <td className="p-3 font-medium">{value || "—"}</td>
+     </tr>
+   );
+ }
+ 
+EOF
+)
