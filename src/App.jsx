@@ -187,7 +187,23 @@ export default function App() {
     const entradaPercent = total > 0 ? (entradaValor / total) * 100 : 0;
     const duranteObraPercent = total > 0 ? (100 * duranteObraTotal) / total : 0;
 
-    const totalEntrada = entradaValor;\n    const totalObra = duranteObraTotal;\n    const totalReforcos = reforcosTotal;\n    const totalPosChaves = (data.chavesForma === 'posConstrutora') ? chavesTotal : 0;\n    const totalFinanciado = chavesFinanciado ? chavesTotal : 0;\n    const totalFluxoSemFin = totalEntrada + totalObra + totalReforcos + (data.chavesForma === 'avista' ? chavesTotal : totalPosChaves);\n    const totalAteChaves = totalEntrada + totalObra + totalReforcos;\n\n    return {\n      total,\n      entradaValor, entradaParcelas, entradaParcela, entradaPercent,\n      duranteObraTotal, duranteObraParcela, duranteObraParcelas: parcelasObra, duranteObraPercent,\n      chavesTotal, chavesFinanciado, reforcosTotal, valorInvestidoReal, recursosCliente, saldoACompor, schedule,\n      precoM2,\n      qRef, vRef, freqRef,\n      totalEntrada, totalObra, totalReforcos, totalPosChaves, totalFinanciado, totalFluxoSemFin, totalAteChaves\n    };
+    const totalEntrada = entradaValor;
+    const totalObra = duranteObraTotal;
+    const totalReforcos = reforcosTotal;
+    const totalPosChaves = (data.chavesForma === 'posConstrutora') ? chavesTotal : 0;
+    const totalFinanciado = chavesFinanciado ? chavesTotal : 0;
+    const totalFluxoSemFin = totalEntrada + totalObra + totalReforcos + (data.chavesForma === 'avista' ? chavesTotal : totalPosChaves);
+    const totalAteChaves = totalEntrada + totalObra + totalReforcos;
+
+    return {
+      total,
+      entradaValor, entradaParcelas, entradaParcela, entradaPercent,
+      duranteObraTotal, duranteObraParcela, duranteObraParcelas: parcelasObra, duranteObraPercent,
+      chavesTotal, chavesFinanciado, reforcosTotal, valorInvestidoReal, recursosCliente, saldoACompor, schedule,
+      precoM2,
+      qRef, vRef, freqRef,
+      totalEntrada, totalObra, totalReforcos, totalPosChaves, totalFinanciado, totalFluxoSemFin, totalAteChaves
+    };
   }, [data]);
 
   // Fluxos p/ TIR
@@ -562,7 +578,22 @@ export default function App() {
                   <DataRow k="Reforços" v={`${brl(valores.reforcosTotal)}${valores.qRef ? ` · ${valores.qRef}x de ${brl(valores.vRef)} a cada ${valores.freqRef}m` : ''}`} />
                   <DataRow k="Chaves" v={`${brl(valores.chavesTotal)}${data.chavesForma === "financiamento" ? " (Financ.)" : data.chavesForma === "posConstrutora" ? ` em ${data.chavesPosParcelas || 0}x` : " (à vista)"}`} />
                 </div>
-                <div>\n                  <p className=\"font-semibold mb-2\">Resumo Financeiro<\/p>\n                  <DataRow k=\"Investimento real\" v={brl(valores.valorInvestidoReal)} \/>\n                  <DataRow k=\"Saldo a compor\" v={brl(valores.saldoACompor)} \/>\n\n                  <div className=\"mt-4\"><p className=\"font-semibold mb-2\">Totais do Fluxo<\/p>\n                    <DataRow k=\"Total entrada\" v={brl(valores.totalEntrada)} \/>\n                    <DataRow k=\"Total durante a obra\" v={brl(valores.totalObra)} \/>\n                    <DataRow k=\"Total reforços\" v={brl(valores.totalReforcos)} \/>\n                    {data.chavesForma === 'posConstrutora' && (<DataRow k=\"Pós-chaves (total)\" v={brl(valores.totalPosChaves)} \/>)}\n                    {data.chavesForma === 'financiamento' && (<DataRow k=\"Total financiado (banco)\" v={brl(valores.totalFinanciado)} \/>)}\n                    {data.chavesForma === 'avista' && (<DataRow k=\"Chaves à vista\" v={brl(valores.chavesTotal)} \/>)}\n                    <DataRow k=\"TOTAL do fluxo (sem financiamento)\" v={brl(valores.totalFluxoSemFin)} \/>\n                    <DataRow k=\"Subtotal até chaves\" v={brl(valores.totalAteChaves)} \/>\n                  <\/div>\n                <\/div>
+                <div>
+                  <p className=\"font-semibold mb-2\">Resumo Financeiro<\/p>
+                  <DataRow k=\"Investimento real\" v={brl(valores.valorInvestidoReal)} \/>
+                  <DataRow k=\"Saldo a compor\" v={brl(valores.saldoACompor)} \/>
+
+                  <div className=\"mt-4\"><p className=\"font-semibold mb-2\">Totais do Fluxo<\/p>
+                    <DataRow k=\"Total entrada\" v={brl(valores.totalEntrada)} \/>
+                    <DataRow k=\"Total durante a obra\" v={brl(valores.totalObra)} \/>
+                    <DataRow k=\"Total reforços\" v={brl(valores.totalReforcos)} \/>
+                    {data.chavesForma === 'posConstrutora' && (<DataRow k=\"Pós-chaves (total)\" v={brl(valores.totalPosChaves)} \/>)}
+                    {data.chavesForma === 'financiamento' && (<DataRow k=\"Total financiado (banco)\" v={brl(valores.totalFinanciado)} \/>)}
+                    {data.chavesForma === 'avista' && (<DataRow k=\"Chaves à vista\" v={brl(valores.chavesTotal)} \/>)}
+                    <DataRow k=\"TOTAL do fluxo (sem financiamento)\" v={brl(valores.totalFluxoSemFin)} \/>
+                    <DataRow k=\"Subtotal até chaves\" v={brl(valores.totalAteChaves)} \/>
+                  <\/div>
+                <\/div>
               </div>
 
               <details className="mt-4">
