@@ -187,14 +187,7 @@ export default function App() {
     const entradaPercent = total > 0 ? (entradaValor / total) * 100 : 0;
     const duranteObraPercent = total > 0 ? (100 * duranteObraTotal) / total : 0;
 
-    return {
-      total,
-      entradaValor, entradaParcelas, entradaParcela, entradaPercent,
-      duranteObraTotal, duranteObraParcela, duranteObraParcelas: parcelasObra, duranteObraPercent,
-      chavesTotal, chavesFinanciado, reforcosTotal, valorInvestidoReal, recursosCliente, saldoACompor, schedule,
-      precoM2,
-      qRef, vRef, freqRef
-    };
+    const totalEntrada = entradaValor;\n    const totalObra = duranteObraTotal;\n    const totalReforcos = reforcosTotal;\n    const totalPosChaves = (data.chavesForma === 'posConstrutora') ? chavesTotal : 0;\n    const totalFinanciado = chavesFinanciado ? chavesTotal : 0;\n    const totalFluxoSemFin = totalEntrada + totalObra + totalReforcos + (data.chavesForma === 'avista' ? chavesTotal : totalPosChaves);\n    const totalAteChaves = totalEntrada + totalObra + totalReforcos;\n\n    return {\n      total,\n      entradaValor, entradaParcelas, entradaParcela, entradaPercent,\n      duranteObraTotal, duranteObraParcela, duranteObraParcelas: parcelasObra, duranteObraPercent,\n      chavesTotal, chavesFinanciado, reforcosTotal, valorInvestidoReal, recursosCliente, saldoACompor, schedule,\n      precoM2,\n      qRef, vRef, freqRef,\n      totalEntrada, totalObra, totalReforcos, totalPosChaves, totalFinanciado, totalFluxoSemFin, totalAteChaves\n    };
   }, [data]);
 
   // Fluxos p/ TIR
@@ -501,7 +494,7 @@ export default function App() {
         <div className="mx-auto max-w-4xl p-4">
           <div ref={resultRef} className="paper mx-auto bg-white shadow-md rounded-2xl overflow-hidden ring-1 ring-slate-200">
             {/* capa */}
-            <section className="p-10 page">
+            <section className=\"p-12 page\">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-extrabold tracking-tight">Proposta Comercial</h2>
@@ -517,7 +510,7 @@ export default function App() {
             </section>
 
             {/* Bloco 1: Empresa & Cliente */}
-            <section className="p-10 page page-break">
+            <section className=\"p-12 page page-break\">
               <h3 className="font-semibold text-lg mb-3">1. Dados Gerais</h3>
               <div className="grid grid-cols-2 gap-8 text-[13px]">
                 <div>
@@ -537,7 +530,7 @@ export default function App() {
             </section>
 
             {/* Bloco 2: Empreendimento */}
-            <section className="p-10 page page-break">
+            <section className=\"p-12 page page-break\">
               <h3 className="font-semibold text-lg mb-3">2. Empreendimento</h3>
               <div className="grid grid-cols-2 gap-8 text-[13px]">
                 <div>
@@ -556,7 +549,7 @@ export default function App() {
             </section>
 
             {/* Bloco 3: Condições Comerciais com resumo simples (Entrada → Obra → Reforços → Chaves) */}
-            <section className="p-10 page page-break">
+            <section className=\"p-12 page page-break\">
               <h3 className="font-semibold text-lg mb-3">3. Condições Comerciais</h3>
               <div className="grid grid-cols-2 gap-8 text-[13px]">
                 <div>
@@ -569,12 +562,7 @@ export default function App() {
                   <DataRow k="Reforços" v={`${brl(valores.reforcosTotal)}${valores.qRef ? ` · ${valores.qRef}x de ${brl(valores.vRef)} a cada ${valores.freqRef}m` : ''}`} />
                   <DataRow k="Chaves" v={`${brl(valores.chavesTotal)}${data.chavesForma === "financiamento" ? " (Financ.)" : data.chavesForma === "posConstrutora" ? ` em ${data.chavesPosParcelas || 0}x` : " (à vista)"}`} />
                 </div>
-                <div>
-                  <p className="font-semibold mb-2">Resumo Financeiro</p>
-                  <DataRow k="Investimento real" v={brl(valores.valorInvestidoReal)} />
-                  <DataRow k="Recursos do cliente" v={brl(valores.recursosCliente)} />
-                  <DataRow k="Saldo a compor" v={brl(valores.saldoACompor)} />
-                </div>
+                <div>\n                  <p className=\"font-semibold mb-2\">Resumo Financeiro<\/p>\n                  <DataRow k=\"Investimento real\" v={brl(valores.valorInvestidoReal)} \/>\n                  <DataRow k=\"Saldo a compor\" v={brl(valores.saldoACompor)} \/>\n\n                  <div className=\"mt-4\"><p className=\"font-semibold mb-2\">Totais do Fluxo<\/p>\n                    <DataRow k=\"Total entrada\" v={brl(valores.totalEntrada)} \/>\n                    <DataRow k=\"Total durante a obra\" v={brl(valores.totalObra)} \/>\n                    <DataRow k=\"Total reforços\" v={brl(valores.totalReforcos)} \/>\n                    {data.chavesForma === 'posConstrutora' && (<DataRow k=\"Pós-chaves (total)\" v={brl(valores.totalPosChaves)} \/>)}\n                    {data.chavesForma === 'financiamento' && (<DataRow k=\"Total financiado (banco)\" v={brl(valores.totalFinanciado)} \/>)}\n                    {data.chavesForma === 'avista' && (<DataRow k=\"Chaves à vista\" v={brl(valores.chavesTotal)} \/>)}\n                    <DataRow k=\"TOTAL do fluxo (sem financiamento)\" v={brl(valores.totalFluxoSemFin)} \/>\n                    <DataRow k=\"Subtotal até chaves\" v={brl(valores.totalAteChaves)} \/>\n                  <\/div>\n                <\/div>
               </div>
 
               <details className="mt-4">
@@ -599,7 +587,7 @@ export default function App() {
             </section>
 
             {/* Bloco 4: Cenários */}
-            <section className="p-10 page page-break">
+            <section className=\"p-12 page page-break\">
               <h3 className="font-semibold text-lg mb-2">4. Cenário 1 — Revenda</h3>
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-[13px]">
                 <table className="w-full">
@@ -617,7 +605,7 @@ export default function App() {
               </div>
             </section>
 
-            <section className="p-10 page page-break">
+            <section className=\"p-12 page page-break\">
               <h3 className="font-semibold text-lg mb-2">5. Cenário 2 — Short Stay (5 anos após entrega)</h3>
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-[13px]">
                 <div className="mb-3 p-3 bg-white rounded border text-[12px] leading-6">
@@ -645,7 +633,7 @@ export default function App() {
             </section>
 
             {/* rodapé / letras pequenas */}
-            <section className="p-10 page page-break">
+            <section className=\"p-12 page page-break\">
               <p className="text-[11px] text-gray-500 italic leading-5">
                 * Estimativas baseadas em projeções de mercado. ROI = retorno sobre o valor total; ROAS = retorno sobre o investimento real.
               </p>
@@ -666,7 +654,7 @@ export default function App() {
         .page { page-break-inside: avoid; }
         .page-break { page-break-before: always; margin-top: 8px; }
         .paper img { max-width: 100%; height: auto; }
-        .paper * { line-height: 1.35; }
+        .paper * { line-height: 1.45; word-break: break-word; }
         @media print {
           @page { size: A4 portrait; margin: 14mm; }
           .sticky { display: none !important; }
