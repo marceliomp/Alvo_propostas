@@ -74,6 +74,7 @@ const sample = {
   construtora: "Nome da Construtora",
   tipo: "Apartamento 2 suítes",
   area: 74,
+  vagas: 2,
   entrega: "Dezembro/2026",
   valorTotal: 980000,
   splitPreset: "10-45-45",
@@ -88,7 +89,7 @@ const sample = {
   balaoValor: 0,
   balaoQuantidade: 0,
   balaoFrequenciaMeses: 6,
-  prazoObraAnos: 3,      // <- vira o prazo padrão de valorização
+  prazoObraAnos: 3,      // vira o prazo padrão de valorização
   apreciacao: 18,        // % a.a.
   adrDiaria: 350, ocupacao: 70, custosOperacionais: 30,
   validade: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
@@ -100,9 +101,9 @@ const sample = {
 export default function App() {
   const [step, setStep] = useState("setup"); // "setup" | "resultado"
   const [data, setData] = useState(sample);
-  const resultRef = useRef(null);
+  const resultRef = useRef(null); // aponta para a "folha" .paper
 
-  /* Preset 10/45/45 etc. */
+  // Preset
   useEffect(() => {
     if (!data.splitPreset || data.splitPreset === "custom") return;
     const [e, o, c] = data.splitPreset.split("-").map(Number);
@@ -116,7 +117,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.splitPreset]);
 
-  /* prazo da obra -> prazo padrão de valorização + ajusta parcelas obra se padrão */
+  // Prazo de obra governa valorização padrão e (se ainda padrão) nº de parcelas
   useEffect(() => {
     setData((d) => {
       const anos = Number(d.prazoObraAnos || 0);
@@ -131,7 +132,7 @@ export default function App() {
     });
   }, [data.prazoObraAnos]);
 
-  /* Cálculos base */
+  // Cálculos
   const valores = useMemo(() => {
     const total = Number(data.valorTotal || 0);
     const entradaValor = Number(data.entradaValor || 0) || (total * Number(data.entradaPercent || 0)) / 100;
@@ -157,6 +158,8 @@ export default function App() {
 
     const recursosCliente = Number(data.recursosCliente || 0);
     const saldoACompor = Math.max(0, valorInvestidoReal - recursosCliente);
+
+    const precoM2 = (Number(data.area || 0) > 0) ? total / Number(data.area) : 0;
 
     // cronograma (datas)
     const hoje = new Date();
@@ -194,10 +197,11 @@ export default function App() {
       total, entradaValor, entradaPercent,
       duranteObraTotal, duranteObraParcela, duranteObraPercent: duranteObraPercentCalc,
       chavesTotal, valorInvestidoReal, recursosCliente, saldoACompor, schedule,
+      precoM2
     };
   }, [data]);
 
-  /* Fluxos p/ TIR */
+  // Fluxos p/ TIR
   const buildFluxosBase = (incluirChaves = true) => {
     const fluxos = [];
     fluxos.push(-valores.entradaValor);
@@ -228,7 +232,7 @@ export default function App() {
     return fluxos;
   };
 
-  /* Cenários */
+  // Cenários
   const cenario1 = useMemo(() => {
     const anos = Number(data.prazoEntrega || data.prazoObraAnos || 0);
     const taxa = Number(data.apreciacao || 0) / 100;
@@ -272,7 +276,7 @@ export default function App() {
     return { valorFinal, patrimonioAcrescido, adrDiaria, receitaMensalBruta, aluguelLiquido, rendaAcumulada, retornoTotal, roi, roas, tir: tirAnual, prazoTotal: anosEntrega + 5 };
   }, [valores, data]);
 
-  /* Handlers */
+  // Handlers
   const handle = (k) => (e) => setData((d) => ({ ...d, [k]: e.target.value }));
   const handleNumeric = (k) => (e) => setData((d) => ({ ...d, [k]: currencyToNumber(e.target.value) }));
   const handlePercent = (k) => (e) => {
@@ -280,35 +284,27 @@ export default function App() {
     setData((d) => ({ ...d, [k]: isNaN(num) ? 0 : num }));
   };
 
-  /* PDF multipágina: usa jsPDF.html, só pega resultRef */
+  // PDF multipágina (somente quando clicar em Baixar PDF)
   const savePDF = async () => {
     await ensurePdfLibs();
     const { jsPDF } = window.jspdf;
     const node = resultRef.current;
-    const pdf = new jsPDF("l", "mm", "a4"); // retrato multipágina
+    const pdf = new jsPDF("p", "mm", "a4");
     await pdf.html(node, {
       margin: [10, 10, 12, 10],
-      autoPaging: "text", // quebra automática
+      autoPaging: "text",
       html2canvas: { scale: 2, useCORS: true },
-      x: 0, y: 0, width: 190, // ~ A4 margem
-      windowWidth: node.scrollWidth,
+      x: 0, y: 0, width: 190,
+      windowWidth: 794, // largura da .paper
     });
     const file = `Proposta_Alvo_${(data.cliente || "cliente").replace(/\s+/g, "_")}.pdf`;
     pdf.save(file);
   };
 
-  const gerarProposta = async () => {
-    setStep("resultado");
-    // espera 1 frame para montar a página de resultado, e gera PDF
-    setTimeout(() => savePDF(), 0);
-  };
-
+  const gerarProposta = () => setStep("resultado"); // NÃO baixa PDF automaticamente
   const fillExample = () => setData(sample);
   const clearAll = () => setData({});
 
-  /***************
-   * UI
-   ***************/
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       {/* Topbar */}
@@ -328,14 +324,14 @@ export default function App() {
                 <button onClick={savePDF} className="px-3 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm">Baixar PDF</button>
               </>
             ) : (
-              <button onClick={gerarProposta} className="px-3 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm">Gerar Proposta (PDF)</button>
+              <button onClick={gerarProposta} className="px-3 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm">Gerar Proposta</button>
             )}
           </div>
         </div>
       </div>
 
       {step === "setup" ? (
-        /* ========== PÁGINA 1: SETUP ========== */
+        /* ---------- PÁGINA 1: SETUP ---------- */
         <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-5 gap-6 p-4">
           {/* esquerda */}
           <div className="lg:col-span-2 space-y-4">
@@ -366,18 +362,19 @@ export default function App() {
                 <Input label="Construtora" value={data.construtora || ""} onChange={handle("construtora")} />
                 <Input label="Tipo" value={data.tipo || ""} onChange={handle("tipo")} />
                 <Input label="Área (m²)" value={data.area ?? ""} onChange={handleNumeric("area")} />
+                <Input label="Vagas de garagem" value={data.vagas ?? ""} onChange={handleNumeric("vagas")} />
                 <Input label="Entrega (texto)" value={data.entrega || ""} onChange={handle("entrega")} />
               </div>
             </Card>
 
-            <Card title="Short Stay (parâmetros)">
+            <Card title="Short Stay / Prazo">
               <div className="grid grid-cols-2 gap-3">
                 <Input label="ADR (R$)" value={data.adrDiaria ?? ""} onChange={handleNumeric("adrDiaria")} />
                 <Input label="Ocupação (%)" value={data.ocupacao ?? ""} onChange={handlePercent("ocupacao")} />
                 <Input label="Custos operacionais (%)" value={data.custosOperacionais ?? ""} onChange={handlePercent("custosOperacionais")} />
                 <Input label="Prazo de obra (anos)" value={data.prazoObraAnos ?? ""} onChange={handleNumeric("prazoObraAnos")} />
               </div>
-              <p className="text-xs text-gray-500 mt-2">Os <strong>5 anos</strong> de short stay são fixos após a entrega.</p>
+              <p className="text-xs text-gray-500 mt-2">Short stay considerado por <strong>5 anos</strong> após a entrega.</p>
             </Card>
           </div>
 
@@ -458,29 +455,29 @@ export default function App() {
           </div>
         </div>
       ) : (
-        /* ========== PÁGINA 2: RESULTADO (vai para o PDF) ========== */
+        /* ---------- PÁGINA 2: RESULTADO (vai para o PDF) ---------- */
         <div className="mx-auto max-w-4xl p-4">
-          <div ref={resultRef} className="bg-white shadow-md rounded-2xl overflow-hidden ring-1 ring-slate-200">
+          <div ref={resultRef} className="paper mx-auto bg-white shadow-md rounded-2xl overflow-hidden ring-1 ring-slate-200">
             {/* capa */}
             <section className="p-8 page">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-3xl font-extrabold tracking-tight">Proposta Comercial</h2>
-                  <p className="text-sm text-gray-500">{data.company}</p>
-                  <p className="text-sm text-gray-500">{data.date} · {data.consultor}</p>
-                  <p className="text-sm text-gray-500">{data.phone} · {data.email}</p>
-                  {data.siteUrl && <a href={data.siteUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline break-all">{data.siteUrl}</a>}
+                  <h2 className="text-2xl font-extrabold tracking-tight">Proposta Comercial</h2>
+                  <p className="text-xs text-gray-500">{data.company}</p>
+                  <p className="text-xs text-gray-500">{data.date} · {data.consultor}</p>
+                  <p className="text-xs text-gray-500">{data.phone} · {data.email}</p>
+                  {data.siteUrl && <a href={data.siteUrl} target="_blank" rel="noreferrer" className="text-[11px] text-blue-600 underline break-all">{data.siteUrl}</a>}
                 </div>
-                <AlvoLogo size={72} />
+                <AlvoLogo size={64} />
               </div>
-              <p className="mt-6 text-gray-700">A <strong>Alvo BR</strong> é especializada em curadoria de investimentos imobiliários, unindo dados, método e resultado.</p>
-              <p className="mt-6 text-xs text-gray-500">Validade desta proposta: <strong>{data.validade}</strong></p>
+              <p className="mt-4 text-[13px] text-gray-700">A <strong>Alvo BR</strong> é especializada em curadoria de investimentos imobiliários, unindo dados, método e resultado.</p>
+              <p className="mt-4 text-[11px] text-gray-500">Validade desta proposta: <strong>{data.validade}</strong></p>
             </section>
 
-            {/* ficha cliente/empreendimento */}
+            {/* dados */}
             <section className="p-8 page page-break">
-              <h3 className="font-semibold text-lg mb-3">1. Dados</h3>
-              <div className="grid grid-cols-2 gap-6 text-sm">
+              <h3 className="font-semibold text-lg mb-2">1. Dados</h3>
+              <div className="grid grid-cols-2 gap-6 text-[13px]">
                 <div>
                   <p className="font-semibold mb-1">Cliente</p>
                   <DataRow k="Nome" v={data.cliente} />
@@ -494,19 +491,21 @@ export default function App() {
                   <DataRow k="Construtora" v={data.construtora} />
                   <DataRow k="Tipo" v={data.tipo} />
                   <DataRow k="Área" v={data.area ? `${data.area} m²` : ""} />
+                  <DataRow k="Vagas de garagem" v={data.vagas ? String(data.vagas) : ""} />
+                  <DataRow k="Valor do m² (aprox.)" v={valores.precoM2 ? brl(valores.precoM2) : "—"} />
                   <DataRow k="Entrega" v={data.entrega} />
                 </div>
               </div>
             </section>
 
-            {/* condições / cronograma resumido */}
+            {/* condições */}
             <section className="p-8 page page-break">
-              <h3 className="font-semibold text-lg mb-3">2. Condições Comerciais</h3>
-              <div className="grid grid-cols-2 gap-6 text-sm">
+              <h3 className="font-semibold text-lg mb-2">2. Condições Comerciais</h3>
+              <div className="grid grid-cols-2 gap-6 text-[13px]">
                 <div>
                   <DataRow k="Valor total" v={brl(valores.total)} />
                   <DataRow k="Entrada" v={`${brl(valores.entradaValor)} (${pct(valores.entradaPercent)})`} />
-                  <DataRow k="Obra" v={`${brl(valores.duranteObraTotal)} em ${data.duranteObraParcelas || 0}x (${brl(valores.duranteObraParcela)})`} />
+                  <DataRow k="Obra" v={`${brl(valores.duranteObraTotal)} em ${data.duranteObraParcelas || 0}x (${brl(valores.duranteObraParcela)}/mês)`} />
                   <DataRow k="Chaves" v={`${brl(valores.chavesTotal)}${data.chavesForma === "financiamento" ? " (Financ.)" : data.chavesForma === "posConstrutora" ? ` em ${data.chavesPosParcelas || 0}x` : ""}`} />
                 </div>
                 <div>
@@ -517,9 +516,9 @@ export default function App() {
                 </div>
               </div>
 
-              <details className="mt-4">
-                <summary className="cursor-pointer text-sm font-medium">Ver cronograma detalhado</summary>
-                <div className="mt-2 max-h-72 overflow-auto text-sm">
+              <details className="mt-3">
+                <summary className="cursor-pointer text-[13px] font-medium">Ver cronograma detalhado</summary>
+                <div className="mt-2 max-h-72 overflow-auto text-[12px]">
                   <table className="w-full">
                     <thead><tr className="text-left text-gray-500 border-b"><th className="py-2">Parcela</th><th>Data</th><th>Valor</th></tr></thead>
                     <tbody>
@@ -536,10 +535,10 @@ export default function App() {
               </details>
             </section>
 
-            {/* CENÁRIOS */}
+            {/* cenários */}
             <section className="p-8 page page-break">
-              <h3 className="font-semibold text-lg mb-3">3. Cenário 1 — Revenda</h3>
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm">
+              <h3 className="font-semibold text-lg mb-2">3. Cenário 1 — Revenda</h3>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-[13px]">
                 <table className="w-full">
                   <tbody>
                     <TR label="Prazo (anos)" value={String(data.prazoEntrega || data.prazoObraAnos || 0)} />
@@ -556,9 +555,9 @@ export default function App() {
             </section>
 
             <section className="p-8 page page-break">
-              <h3 className="font-semibold text-lg mb-3">4. Cenário 2 — Short Stay (5 anos após entrega)</h3>
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm">
-                <div className="mb-3 p-3 bg-white rounded border text-xs">
+              <h3 className="font-semibold text-lg mb-2">4. Cenário 2 — Short Stay (5 anos após entrega)</h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-[13px]">
+                <div className="mb-3 p-3 bg-white rounded border text-[12px]">
                   <p className="font-semibold mb-1">Parâmetros</p>
                   <ul className="space-y-1">
                     <li>• ADR: {brl(cenario2.adrDiaria)}</li>
@@ -582,12 +581,15 @@ export default function App() {
               </div>
             </section>
 
-            {/* rodapé */}
+            {/* rodapé / letras pequenas */}
             <section className="p-8 page page-break">
-              <p className="text-xs text-gray-500 italic">
+              <p className="text-[11px] text-gray-500 italic">
                 * Estimativas baseadas em projeções de mercado. ROI = retorno sobre o valor total; ROAS = retorno sobre o investimento real.
               </p>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-[11px] text-gray-500 mt-2">
+                * Formas de pagamento sujeitas a atualização por <strong>CUB (período de obras)</strong> e <strong>IGP-M + 1%</strong> após a entrega das chaves.
+              </p>
+              <p className="text-[11px] text-gray-500 mt-2">
                 © {new Date().getFullYear()} Alvo BR — {data.company} · {data.phone} · {data.email}
               </p>
             </section>
@@ -595,8 +597,10 @@ export default function App() {
         </div>
       )}
 
-      {/* CSS para impressão e quebras */}
+      {/* CSS de layout de página */}
       <style>{`
+        /* Largura fixa de "folha" para o PDF ficar enquadrado */
+        .paper { width: 794px; } /* ~A4 a 96dpi */
         .page { page-break-inside: avoid; }
         .page-break { page-break-before: always; }
         @media print {
@@ -643,7 +647,7 @@ function Input({ label, value, onChange, placeholder }) {
 function DataRow({ k, v }) {
   return (
     <div className="flex gap-2 py-2 border-b border-dashed border-gray-100">
-      <div className="w-40 text-gray-500">{k}</div>
+      <div className="w-44 text-gray-500">{k}</div>
       <div className="flex-1 font-medium">{v || "—"}</div>
     </div>
   );
