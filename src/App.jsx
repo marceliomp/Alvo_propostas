@@ -117,86 +117,78 @@ export default function App() {
   }, [data.prazoObraAnos]);
 
   // Cálculos
-const valores = useMemo(() => {
-  const total = Number(data.valorTotal || 0);
+  const valores = useMemo(() => {
+    const total = Number(data.valorTotal || 0);
 
-  // Entrada nominal
-  const entradaValor = Number(data.entradaValor || 0);
-  const entradaParcelas = Math.max(1, Number(data.entradaParcelas || 1));
-  const entradaParcela = entradaValor / entradaParcelas;
+    // Entrada NOMINAL (com possibilidade futura de parcelas de entrada)
+    const entradaValor = Number(data.entradaValor || 0);
+    const entradaParcelas = Math.max(1, Number(data.entradaParcelas || 1));
+    const entradaParcela = entradaValor / entradaParcelas;
 
-  // Obra nominal
-  const parcelasObra = Number(data.duranteObraParcelas || 0);
-  const duranteObraParcela = Number(data.obraParcelaValor || 0);
-  const duranteObraTotal = duranteObraParcela * Math.max(0, parcelasObra);
+    // Obra NOMINAL
+    const parcelasObra = Number(data.duranteObraParcelas || 0);
+    const duranteObraParcela = Number(data.obraParcelaValor || 0);
+    const duranteObraTotal = duranteObraParcela * Math.max(0, parcelasObra);
 
-  // Chaves (percentual)
-  const chavesTotal = (Number(total) * Number(data.chavesPercent || 0)) / 100;
+    // Chaves (SOMENTE %)
+    const chavesTotal = (total * Number(data.chavesPercent || 0)) / 100;
+    const chavesFinanciado = data.chavesForma === "financiamento";
+    const valorInvestidoReal = chavesFinanciado
+      ? entradaValor + duranteObraTotal
+      : entradaValor + duranteObraTotal + chavesTotal;
 
-  // Reforços (ex-balões) – nominais
-  const reforcoQtd = Math.max(0, Number(data.balaoQuantidade || 0));
-  const reforcoValor = Math.max(0, Number(data.balaoValor || 0));
-  const reforcosTotal = reforcoQtd * reforcoValor;
+    const recursosCliente = Number(data.recursosCliente || 0);
+    const saldoACompor = Math.max(0, valorInvestidoReal - recursosCliente);
 
-  // Investimento real (exclui chaves se for financiamento)
-  const chavesFinanciado = data.chavesForma === "financiamento";
-  const valorInvestidoReal = chavesFinanciado
-    ? entradaValor + duranteObraTotal + reforcosTotal
-    : entradaValor + duranteObraTotal + reforcosTotal + chavesTotal;
+    const precoM2 = (Number(data.area || 0) > 0) ? total / Number(data.area) : 0;
 
-  const recursosCliente = Number(data.recursosCliente || 0);
-  const saldoACompor = Math.max(0, valorInvestidoReal - recursosCliente);
-
-  const precoM2 = (Number(data.area || 0) > 0) ? total / Number(data.area) : 0;
-
-  // cronograma
-  const hoje = new Date();
-  const schedule = [];
-  for (let i = 1; i <= entradaParcelas; i++) {
-    const d = new Date(hoje); d.setMonth(d.getMonth() + (i - 1));
-    schedule.push({
-      tipo: `Entrada ${entradaParcelas === 1 ? "(ato)" : `${i}/${entradaParcelas}`}`,
-      data: d, valor: entradaParcela
-    });
-  }
-  for (let i = 1; i <= parcelasObra; i++) {
-    const d = new Date(hoje); d.setMonth(d.getMonth() + i);
-    schedule.push({ tipo: `Obra ${i}/${parcelasObra}`, data: d, valor: duranteObraParcela });
-  }
-  if (data.chavesForma === "avista" && chavesTotal > 0) {
-    const d = new Date(hoje); d.setMonth(d.getMonth() + parcelasObra + 1);
-    schedule.push({ tipo: "Chaves (à vista)", data: d, valor: chavesTotal });
-  }
-  if (data.chavesForma === "posConstrutora" && chavesTotal > 0) {
-    const pcs = Number(data.chavesPosParcelas || 0);
-    for (let i = 1; i <= pcs; i++) {
-      const d = new Date(hoje); d.setMonth(d.getMonth() + parcelasObra + i);
-      schedule.push({ tipo: `Pós-chaves ${i}/${pcs}`, data: d, valor: chavesTotal / Math.max(pcs, 1) });
+    // cronograma (datas) – respeitando entradaParcelas e regras
+    const hoje = new Date();
+    const schedule = [];
+    for (let i = 1; i <= entradaParcelas; i++) {
+      const d = new Date(hoje); d.setMonth(d.getMonth() + (i - 1));
+      schedule.push({ tipo: `Entrada ${i}/${entradaParcelas}` , data: d, valor: entradaParcela });
     }
-  }
-  const freq = Math.max(1, Number(data.balaoFrequenciaMeses || 1));
-  if (reforcoQtd > 0 && reforcoValor > 0) {
-    let startOffset = parcelasObra + 1;
-    if (data.chavesForma === "posConstrutora") startOffset = parcelasObra + Number(data.chavesPosParcelas || 0) + 1;
-    for (let i = 0; i < reforcoQtd; i++) {
-      const d = new Date(hoje); d.setMonth(d.getMonth() + startOffset + i * freq);
-      schedule.push({ tipo: `Reforço ${i + 1}/${reforcoQtd}`, data: d, valor: reforcoValor });
+    for (let i = 1; i <= parcelasObra; i++) {
+      const d = new Date(hoje); d.setMonth(d.getMonth() + i);
+      schedule.push({ tipo: `Obra ${i}/${parcelasObra}`, data: d, valor: duranteObraParcela });
     }
-  }
+    if (data.chavesForma === "avista" && chavesTotal > 0) {
+      const d = new Date(hoje); d.setMonth(d.getMonth() + parcelasObra + 1);
+      schedule.push({ tipo: "Chaves (à vista)", data: d, valor: chavesTotal });
+    }
+    if (data.chavesForma === "posConstrutora" && chavesTotal > 0) {
+      const pcs = Number(data.chavesPosParcelas || 0);
+      for (let i = 1; i <= pcs; i++) {
+        const d = new Date(hoje); d.setMonth(d.getMonth() + parcelasObra + i);
+        schedule.push({ tipo: `Pós-chaves ${i}/${pcs}`, data: d, valor: chavesTotal / Math.max(pcs, 1) });
+      }
+    }
 
-  const entradaPercent = total > 0 ? (entradaValor / total) * 100 : 0;
-  const duranteObraPercent = total > 0 ? (100 * duranteObraTotal) / total : 0;
+    // balões NOMINAIS
+    const q = Math.max(0, Number(data.balaoQuantidade || 0));
+    const vBalao = Math.max(0, Number(data.balaoValor || 0));
+    const freq = Math.max(1, Number(data.balaoFrequenciaMeses || 1));
+    if (q > 0 && vBalao > 0) {
+      let startOffset = parcelasObra + 1;
+      if (data.chavesForma === "posConstrutora") startOffset = parcelasObra + Number(data.chavesPosParcelas || 0) + 1;
+      for (let i = 0; i < q; i++) {
+        const d = new Date(hoje); d.setMonth(d.getMonth() + startOffset + i * freq);
+        schedule.push({ tipo: `Balão ${i + 1}/${q}`, data: d, valor: vBalao });
+      }
+    }
 
-  return {
-    total,
-    entradaValor, entradaParcelas, entradaParcela, entradaPercent,
-    duranteObraTotal, duranteObraParcela, duranteObraParcelas: parcelasObra, duranteObraPercent,
-    chavesTotal,
-    reforcosTotal, reforcoQtd, reforcoValor,
-    valorInvestidoReal, recursosCliente, saldoACompor, schedule,
-    precoM2
-  };
-}, [data]);
+    const entradaPercent = total > 0 ? (entradaValor / total) * 100 : 0;
+    const duranteObraPercent = total > 0 ? (100 * duranteObraTotal) / total : 0;
+
+    return {
+      total,
+      entradaValor, entradaParcelas, entradaParcela, entradaPercent,
+      duranteObraTotal, duranteObraParcela, duranteObraParcelas: parcelasObra, duranteObraPercent,
+      chavesTotal, valorInvestidoReal, recursosCliente, saldoACompor, schedule,
+      precoM2
+    };
+  }, [data]);
 
   // Fluxos p/ TIR
   const buildFluxosBase = (incluirChaves = true) => {
@@ -469,7 +461,12 @@ const valores = useMemo(() => {
               <div className="bg-white border rounded-2xl p-4 shadow-sm text-sm">
                 <p className="font-semibold text-emerald-800 mb-2">Resumo</p>
                 <ul className="space-y-1">
-                  <li>Entrada: <strong>{brl(valores.entradaValor)} ({pct(valores.entradaPercent)})</strong> em <strong>{valores.entradaParcelas}x</strong> ({brl(valores.entradaParcela)}/parcela)</li>
+                  <li>
+                  {valores.entradaParcelas === 1
+                    ? <>Entrada (ato): <strong>{brl(valores.entradaValor)}</strong></>
+                    : <>Entrada: <strong>{brl(valores.entradaValor)}</strong> em <strong>{valores.entradaParcelas}x</strong> ({brl(valores.entradaParcela)}/parcela) — {pct(valores.entradaPercent)}</>
+                  }
+                  </li>
                   <li>Obra: <strong>{brl(valores.duranteObraTotal)}</strong> em <strong>{valores.duranteObraParcelas}x</strong> ({brl(valores.duranteObraParcela)}/mês) — {pct(valores.duranteObraPercent)}</li>
                   <li>Chaves: <strong>{brl(valores.chavesTotal)}</strong> {data.chavesForma === "financiamento" ? "(financ.)" : data.chavesForma === "posConstrutora" ? `em ${data.chavesPosParcelas || 0}x` : "(à vista)"}</li>
                 </ul>
