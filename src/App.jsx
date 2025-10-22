@@ -16,24 +16,6 @@ const currencyToNumber = (s) => {
   const num = parseFloat(clean);
   return Number.isFinite(num) ? num : 0;
 };
-const calcularTIR = (fluxos, chute = 0.1) => {
-  let taxa = chute;
-  const max = 1000;
-  const eps = 1e-4;
-  for (let iter = 0; iter < max; iter++) {
-    let vpl = 0;
-    let der = 0;
-    for (let i = 0; i < fluxos.length; i++) {
-      const fator = Math.pow(1 + taxa, i);
-      vpl += fluxos[i] / fator;
-      der -= (i * fluxos[i]) / (fator * (1 + taxa));
-    }
-    if (Math.abs(vpl) < eps || der === 0) return taxa * 100;
-    taxa -= vpl / der;
-  }
-  return 0;
-};
-
 /********************
  * Logo
  ********************/
@@ -259,35 +241,6 @@ export default function App() {
     };
   }, [data]);
 
-  const buildFluxosBase = (incluirChaves = true) => {
-    const fluxos = [];
-
-    for (let i = 0; i < valores.entradaParcelas; i++) fluxos.push(-valores.entradaParcela);
-    for (let i = 0; i < valores.duranteObraParcelas; i++) fluxos.push(-valores.duranteObraParcela);
-
-    if (valores.qRef > 0 && valores.vRef > 0) {
-      for (let i = 0; i < valores.qRef; i++) {
-        const idx = valores.entradaParcelas + Math.min(Math.max(valores.duranteObraParcelas - 1, 0), i * valores.freqRef);
-        while (fluxos.length <= idx) fluxos.push(0);
-        fluxos[idx] -= valores.vRef;
-      }
-    }
-
-    if (incluirChaves) {
-      if (data.chavesForma === "avista") {
-        fluxos.push(-valores.chavesTotal);
-      } else if (data.chavesForma === "posConstrutora") {
-        const pcs = Math.max(1, Math.floor(Number(data.chavesPosParcelas || 0)));
-        const parcelaPos = valores.chavesTotal / pcs;
-        for (let i = 0; i < pcs; i++) fluxos.push(-parcelaPos);
-      } else {
-        for (let i = 0; i < 12; i++) fluxos.push(0);
-      }
-    }
-
-    return fluxos;
-  };
-
   const cenario1 = useMemo(() => {
     const anos = Math.max(0, Number(data.prazoObraAnos || 0));
     const taxa = Math.max(0, Number(data.apreciacao || 0)) / 100;
@@ -295,11 +248,7 @@ export default function App() {
     const lucro = valorFinal - valores.total;
     const roi = valores.total > 0 ? (lucro / valores.total) * 100 : 0;
     const roas = valores.valorInvestidoReal > 0 ? (lucro / valores.valorInvestidoReal) * 100 : 0;
-    const fluxos = buildFluxosBase(true);
-    fluxos.push(valorFinal);
-    const tirMensal = calcularTIR(fluxos);
-    const tirAnual = tirMensal ? (Math.pow(1 + tirMensal / 100, 12) - 1) * 100 : 0;
-    return { valorFinal, lucro, roi, roas, tir: tirAnual, prazo: anos };
+    return { valorFinal, lucro, roi, roas, prazo: anos };
   }, [valores, data]);
 
   const cenario2 = useMemo(() => {
@@ -319,13 +268,6 @@ export default function App() {
     const retornoTotal = patrimonioAcrescido + rendaAcumulada;
     const roi = valores.total > 0 ? (retornoTotal / valores.total) * 100 : 0;
     const roas = valores.valorInvestidoReal > 0 ? (retornoTotal / valores.valorInvestidoReal) * 100 : 0;
-
-    const fluxos = buildFluxosBase(true);
-    for (let i = 0; i < mesesOperacao; i++) fluxos.push(aluguelLiquido);
-    fluxos.push(valorFinal);
-    const tirMensal = calcularTIR(fluxos);
-    const tirAnual = tirMensal ? (Math.pow(1 + tirMensal / 100, 12) - 1) * 100 : 0;
-
     return {
       valorFinal,
       patrimonioAcrescido,
@@ -336,7 +278,6 @@ export default function App() {
       retornoTotal,
       roi,
       roas,
-      tir: tirAnual,
       prazoTotal: anosEntrega + 5,
     };
   }, [valores, data]);
@@ -456,6 +397,21 @@ export default function App() {
     coberturaBanco > 0
       ? `Cliente: ${brl(coberturaCliente)} · Banco: ${brl(coberturaBanco)}`
       : `Cliente: ${brl(coberturaCliente)}`;
+  const totalCobertoTexto = `Total coberto: ${brl(valores.totalJaSomado)}`;
+  const coberturaSubValue =
+    valores.totalJaSomado > 0 || coberturaBanco > 0
+      ? (
+          <>
+            <span>{totalCobertoTexto}</span>
+            {coberturaBanco > 0 && (
+              <>
+                <br />
+                <span>{coberturaDetalhe}</span>
+              </>
+            )}
+          </>
+        )
+      : null;
 
   const resumoKPIs = [
     { title: "Valor do imóvel", value: brl(valores.total) },
@@ -468,7 +424,7 @@ export default function App() {
       title: saldoTitle,
       value: brl(valores.saldoACompor),
       highlight: true,
-      subValue: coberturaDetalhe,
+      subValue: coberturaSubValue || coberturaDetalhe,
     },
   ].filter(Boolean);
 
@@ -546,7 +502,7 @@ export default function App() {
               <Input label="Telefone" value={data.clientePhone || ""} onChange={handle("clientePhone")} />
               <Input label="E-mail" value={data.clienteEmail || ""} onChange={handle("clienteEmail")} />
               <Input
-                label="Recursos próprios (R$)"
+                label="Recursos próprios"
                 value={data.recursosCliente ?? ""}
                 onChange={handleCurrency("recursosCliente")}
                 currency
@@ -898,7 +854,7 @@ export default function App() {
                     <span className="font-semibold">{brl(valores.totalFluxoSemFin)}</span>
                   </div>
                   <div className="text-xs text-gray-500 flex justify-between">
-                    <span>Cobertura atual</span>
+                    <span>Total já somado</span>
                     <span className="font-medium">{brl(valores.totalJaSomado)}</span>
                   </div>
                 </div>
@@ -934,7 +890,7 @@ export default function App() {
                     <span>{brl(valores.saldoACompor)}</span>
                   </div>
                   <div className="flex justify-between text-[11px] text-gray-500">
-                    <span>Cobertura atual</span>
+                    <span>Total já somado</span>
                     <span>{brl(valores.totalJaSomado)}</span>
                   </div>
                 </div>
@@ -1064,7 +1020,6 @@ export default function App() {
                       <td className="p-3 font-bold text-emerald-900">ROAS</td>
                       <td className="p-3 font-bold text-emerald-900">{pct(cenario1.roas)}</td>
                     </tr>
-                    <TR label="TIR (a.a.)" value={pct(cenario1.tir)} />
                   </tbody>
                 </table>
               </div>
@@ -1104,7 +1059,6 @@ export default function App() {
                       <td className="p-3 font-bold text-emerald-900">ROAS</td>
                       <td className="p-3 font-bold text-emerald-900">{pct(cenario2.roas)}</td>
                     </tr>
-                    <TR label="TIR (a.a.)" value={pct(cenario2.tir)} />
                   </tbody>
                 </table>
               </div>
