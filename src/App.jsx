@@ -1,9 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import alvoLogo from "./assets/alvo-logo.svg";
 
 /********************
  * Utils
  ********************/
 const brl = (n) => Number(n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const formatCurrencyInput = (value) => {
+  if (value === null || value === undefined || value === "") return "";
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "";
+  return brl(num);
+};
 const pct = (n) => {
   const num = Number.isFinite(Number(n)) ? Number(n) : 0;
   return num.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
@@ -36,9 +43,7 @@ const calcularTIR = (fluxos, chute = 0.1) => {
 /********************
  * Logo
  ********************/
-const ALVO_LOGO =
-  "data:image/svg+xml,%3Csvg width='1200' height='400' viewBox='0 0 1200 400' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50' y='300' font-family='Arial' font-size='280' font-weight='900' fill='%233A3A3A' letter-spacing='-10'%3EALVO%3C/text%3E%3Ccircle cx='950' cy='200' r='140' stroke='%233A3A3A' stroke-width='28' fill='none'/%3E%3Ccircle cx='950' cy='200' r='85' stroke='%233A3A3A' stroke-width='20' fill='none'/%3E%3Ctext x='1050' y='235' font-family='Arial' font-size='95' font-weight='700' fill='%2334747E'%3EBR%3C/text%3E%3C/svg%3E";
-const AlvoLogo = ({ size = 48 }) => <img src={ALVO_LOGO} alt="Alvo BR" style={{ height: size, width: "auto" }} />;
+const AlvoLogo = ({ size = 48 }) => <img src={alvoLogo} alt="Alvo BR" style={{ height: size, width: "auto" }} />;
 
 /********************
  * PDF libs
@@ -109,6 +114,7 @@ export default function App() {
   const [step, setStep] = useState("setup");
   const [data, setData] = useState(sample);
   const resultRef = useRef(null);
+  const [scheduleExpanded, setScheduleExpanded] = useState(false);
 
   useEffect(() => {
     setData((d) => {
@@ -123,6 +129,12 @@ export default function App() {
       };
     });
   }, [data.prazoObraAnos]);
+
+  useEffect(() => {
+    if (step !== "resultado") {
+      setScheduleExpanded(false);
+    }
+  }, [step]);
 
   const valores = useMemo(() => {
     const total = Math.max(0, Number(data.valorTotal || 0));
@@ -150,7 +162,8 @@ export default function App() {
     const totalAteChaves = entradaValor + duranteObraTotal + reforcosTotal;
 
     const valorInvestidoReal = totalFluxoSemFin;
-    const saldoACompor = Math.max(0, total - valorInvestidoReal);
+    const totalCoberto = valorInvestidoReal + totalFinanciado;
+    const saldoACompor = Math.max(0, total - totalCoberto);
 
     const precoM2 = Number(data.area) > 0 ? total / Number(data.area) : 0;
 
@@ -236,6 +249,7 @@ export default function App() {
       totalFinanciado,
       totalFluxoSemFin,
       totalAteChaves,
+      totalCoberto,
       schedule: scheduleOrdenado,
       entradaPercent: total > 0 ? (entradaValor / total) * 100 : 0,
       duranteObraPercent: total > 0 ? (duranteObraTotal / total) * 100 : 0,
@@ -326,11 +340,22 @@ export default function App() {
 
   const handle = (k) => (e) => setData((d) => ({ ...d, [k]: e.target.value }));
   const handleNumeric = (k) => (e) => {
-    const num = Math.max(0, currencyToNumber(e.target.value));
+    const rawValue = e.target.value;
+    if (rawValue === undefined) return;
+    if (rawValue.trim() === "") {
+      setData((d) => ({ ...d, [k]: "" }));
+      return;
+    }
+    const num = Math.max(0, currencyToNumber(rawValue));
     setData((d) => ({ ...d, [k]: num }));
   };
   const handlePercent = (k) => (e) => {
-    const raw = parseFloat((e.target.value + "").replace(",", "."));
+    const text = e.target.value ?? "";
+    if (text.trim() === "") {
+      setData((d) => ({ ...d, [k]: "" }));
+      return;
+    }
+    const raw = parseFloat(text.replace(",", "."));
     const num = Number.isFinite(raw) ? Math.max(0, raw) : 0;
     setData((d) => ({ ...d, [k]: num }));
   };
@@ -403,7 +428,12 @@ export default function App() {
     { title: "Fluxo total (cliente)", value: brl(valores.totalFluxoSemFin) },
     valores.totalPosChaves ? { title: "Pós-chaves", value: brl(valores.totalPosChaves) } : null,
     valores.totalFinanciado ? { title: "Financiado (banco)", value: brl(valores.totalFinanciado) } : null,
-    { title: "Saldo a compor", value: brl(valores.saldoACompor), highlight: true },
+    {
+      title: "Saldo a compor",
+      value: brl(valores.saldoACompor),
+      highlight: true,
+      subtitle: `Coberto até agora: ${brl(valores.totalCoberto)}`,
+    },
   ].filter(Boolean);
 
   return (
@@ -483,6 +513,8 @@ export default function App() {
                 label="Recursos próprios (R$)"
                 value={data.recursosCliente ?? ""}
                 onChange={handleNumeric("recursosCliente")}
+                formatAsCurrency
+                inputMode="decimal"
               />
             </div>
           </Card>
@@ -503,13 +535,25 @@ export default function App() {
             <div className="space-y-4">
               <div className="rounded-xl border p-3 bg-slate-50">
                 <p className="text-sm font-semibold mb-2">Valor do imóvel</p>
-                <Input label="Valor total (R$)" value={data.valorTotal ?? ""} onChange={handleNumeric("valorTotal")} />
+                <Input
+                  label="Valor total (R$)"
+                  value={data.valorTotal ?? ""}
+                  onChange={handleNumeric("valorTotal")}
+                  formatAsCurrency
+                  inputMode="decimal"
+                />
               </div>
 
               <div className="rounded-xl border p-3 bg-slate-50">
                 <p className="text-sm font-semibold mb-2">Entrada</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                  <Input label="Total de entrada (R$)" value={data.entradaValor ?? ""} onChange={handleNumeric("entradaValor")} />
+                    <Input
+                      label="Total de entrada (R$)"
+                      value={data.entradaValor ?? ""}
+                      onChange={handleNumeric("entradaValor")}
+                      formatAsCurrency
+                      inputMode="decimal"
+                    />
                   <Input
                     label="Parcelas de entrada"
                     value={data.entradaParcelas ?? ""}
@@ -529,6 +573,8 @@ export default function App() {
                     label="Parcela de obra (R$)"
                     value={data.obraParcelaValor ?? ""}
                     onChange={handleNumeric("obraParcelaValor")}
+                    formatAsCurrency
+                    inputMode="decimal"
                   />
                   <Input
                     label="Nº de parcelas"
@@ -545,7 +591,13 @@ export default function App() {
               <div className="rounded-xl border p-3 bg-slate-50">
                 <p className="text-sm font-semibold mb-2">Reforços</p>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                  <Input label="Valor do reforço (R$)" value={data.balaoValor ?? ""} onChange={handleNumeric("balaoValor")} />
+                    <Input
+                      label="Valor do reforço (R$)"
+                      value={data.balaoValor ?? ""}
+                      onChange={handleNumeric("balaoValor")}
+                      formatAsCurrency
+                      inputMode="decimal"
+                    />
                   <Input
                     label="Quantidade"
                     value={data.balaoQuantidade ?? ""}
@@ -615,7 +667,13 @@ export default function App() {
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                   <Input label="Prazo de obra (anos)" value={data.prazoObraAnos ?? ""} onChange={handleNumeric("prazoObraAnos")} />
                   <Input label="Valorização a.a. (%)" value={data.apreciacao ?? ""} onChange={handlePercent("apreciacao")} />
-                  <Input label="ADR (R$)" value={data.adrDiaria ?? ""} onChange={handleNumeric("adrDiaria")} />
+                    <Input
+                      label="ADR (R$)"
+                      value={data.adrDiaria ?? ""}
+                      onChange={handleNumeric("adrDiaria")}
+                      formatAsCurrency
+                      inputMode="decimal"
+                    />
                   <Input label="Ocupação (%)" value={data.ocupacao ?? ""} onChange={handlePercent("ocupacao")} />
                   <Input
                     label="Custos operacionais (%)"
@@ -663,14 +721,17 @@ export default function App() {
                   )}
                 </li>
               </ul>
-              <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="rounded-xl bg-slate-50 border p-3">
-                  Investimento real: <strong>{brl(valores.valorInvestidoReal)}</strong>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-slate-50 border p-3">
+                    Investimento real: <strong>{brl(valores.valorInvestidoReal)}</strong>
+                  </div>
+                  <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
+                    Saldo a compor: <strong className="text-emerald-700">{brl(valores.saldoACompor)}</strong>
+                    <div className="text-[11px] text-emerald-700 mt-1">
+                      Total coberto até agora: <strong>{brl(valores.totalCoberto)}</strong>
+                    </div>
+                  </div>
                 </div>
-                <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3">
-                  Saldo a compor: <strong className="text-emerald-700">{brl(valores.saldoACompor)}</strong>
-                </div>
-              </div>
               <div className="mt-3 rounded-xl bg-white border p-3">
                 <p className="font-semibold mb-1">Totais do fluxo</p>
                 <ul className="text-xs space-y-1">
@@ -791,46 +852,87 @@ export default function App() {
                     <span>Saldo a compor</span>
                     <span>{brl(valores.saldoACompor)}</span>
                   </div>
+                  <div className="text-xs text-emerald-700">
+                    Total coberto até agora: <strong>{brl(valores.totalCoberto)}</strong>
+                  </div>
                 </div>
               </div>
             </section>
 
             <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
-              <h3 className="text-lg font-semibold text-slate-700">Fluxo de Pagamento</h3>
-              <div className="rounded-xl border overflow-hidden">
-                <table className="w-full text-[12px]">
-                  <thead>
-                    <tr className="bg-slate-50 border-b text-gray-600">
-                      <th className="p-2 text-left">#</th>
-                      <th className="p-2 text-left">Mês</th>
-                      <th className="p-2 text-left">Tipo</th>
-                      <th className="p-2 text-right">Valor</th>
-                      <th className="p-2 text-right">Acumulado</th>
-                      <th className="p-2 text-right">% do fluxo</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(() => {
-                      let acumulado = 0;
-                      return valores.schedule.map((p, i) => {
-                        acumulado += p.valor;
-                        const perc = valores.totalFluxoSemFin > 0 ? (acumulado / valores.totalFluxoSemFin) * 100 : 0;
-                        return (
-                          <tr key={`${p.tipo}-${i}`} className="border-b last:border-0">
-                            <td className="p-2">{i + 1}</td>
-                            <td className="p-2">{p.data.toLocaleDateString("pt-BR")}</td>
-                            <td className="p-2">{p.tipo}</td>
-                            <td className="p-2 text-right">{brl(p.valor)}</td>
-                            <td className="p-2 text-right">{brl(acumulado)}</td>
-                            <td className="p-2 text-right">{perc.toFixed(2)}%</td>
-                          </tr>
-                        );
-                      });
-                    })()}
-                  </tbody>
-                </table>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold text-slate-700">Fluxo de Pagamento</h3>
+                <button
+                  onClick={() => setScheduleExpanded((prev) => !prev)}
+                  className="px-3 py-2 text-xs font-medium rounded-full border border-emerald-500 text-emerald-600 hover:bg-emerald-50 transition"
+                >
+                  {scheduleExpanded
+                    ? "Ocultar cronograma mensal"
+                    : `Ver cronograma mensal (${valores.schedule.length} lançamentos)`}
+                </button>
               </div>
-              <p className="mt-2 text-[11px] text-gray-500">
+
+              {!scheduleExpanded ? (
+                <div className="rounded-xl border bg-slate-50 p-4 text-sm space-y-3">
+                  <div className="space-y-1">
+                    {resumoFluxo.map((item) => (
+                      <div key={item.label} className="flex justify-between">
+                        <span>{item.label}</span>
+                        <span className="font-semibold">{brl(item.valor)}</span>
+                      </div>
+                    ))}
+                    {valores.totalFinanciado > 0 && (
+                      <div className="flex justify-between text-emerald-700 font-semibold">
+                        <span>Financiado (banco)</span>
+                        <span>{brl(valores.totalFinanciado)}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="pt-2 border-t text-sm flex justify-between text-slate-700">
+                    <span>Fluxo total (cliente)</span>
+                    <span className="font-semibold">{brl(valores.totalFluxoSemFin)}</span>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    {valores.schedule.length} lançamentos considerados até as chaves. Clique para ver o detalhamento
+                    mensal.
+                  </p>
+                </div>
+              ) : (
+                <div className="rounded-xl border overflow-hidden">
+                  <table className="w-full text-[12px]">
+                    <thead>
+                      <tr className="bg-slate-50 border-b text-gray-600">
+                        <th className="p-2 text-left">#</th>
+                        <th className="p-2 text-left">Mês</th>
+                        <th className="p-2 text-left">Tipo</th>
+                        <th className="p-2 text-right">Valor</th>
+                        <th className="p-2 text-right">Acumulado</th>
+                        <th className="p-2 text-right">% do fluxo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        let acumulado = 0;
+                        return valores.schedule.map((p, i) => {
+                          acumulado += p.valor;
+                          const perc = valores.totalFluxoSemFin > 0 ? (acumulado / valores.totalFluxoSemFin) * 100 : 0;
+                          return (
+                            <tr key={`${p.tipo}-${i}`} className="border-b last:border-0">
+                              <td className="p-2">{i + 1}</td>
+                              <td className="p-2">{p.data.toLocaleDateString("pt-BR")}</td>
+                              <td className="p-2">{p.tipo}</td>
+                              <td className="p-2 text-right">{brl(p.valor)}</td>
+                              <td className="p-2 text-right">{brl(acumulado)}</td>
+                              <td className="p-2 text-right">{perc.toFixed(2)}%</td>
+                            </tr>
+                          );
+                        });
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <p className="text-[11px] text-gray-500">
                 Fórmulas: Valor total = SOMA(Entrada + Obra + Reforços + (Chaves à vista ou Pós-chaves)). Acumulado(i) =
                 Acumulado(i-1) + Valor(i). % do fluxo(i) = Acumulado(i) / Total do fluxo.
               </p>
@@ -958,15 +1060,21 @@ function Card({ title, children }) {
   );
 }
 
-function Input({ label, value, onChange, placeholder }) {
+function Input({ label, value, onChange, placeholder, formatAsCurrency = false, inputMode, ...rest }) {
+  const displayValue =
+    formatAsCurrency && value !== null && value !== undefined && value !== ""
+      ? formatCurrencyInput(value)
+      : value ?? "";
   return (
     <label className="block">
       <div className="text-xs text-gray-600 mb-1">{label}</div>
       <input
         className="w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-        value={value ?? ""}
+        value={displayValue}
         onChange={onChange}
         placeholder={placeholder}
+        inputMode={inputMode}
+        {...rest}
       />
     </label>
   );
@@ -981,11 +1089,14 @@ function DataRow({ k, v }) {
   );
 }
 
-function KPI({ title, value, highlight }) {
+function KPI({ title, value, highlight, subtitle }) {
   return (
-    <div className={`rounded-xl border p-3 ${highlight ? "bg-emerald-50 border-emerald-200" : "bg-white"}`}>
+    <div className={`rounded-xl border p-3 space-y-1 ${highlight ? "bg-emerald-50 border-emerald-200" : "bg-white"}`}>
       <div className="text-xs text-gray-600 mb-1">{title}</div>
       <div className="text-lg font-bold">{value}</div>
+      {subtitle && (
+        <div className={`text-xs ${highlight ? "text-emerald-700" : "text-gray-500"}`}>{subtitle}</div>
+      )}
     </div>
   );
 }
