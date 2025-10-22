@@ -12,7 +12,6 @@ const currencyToNumber = (s) => {
   const num = parseFloat(clean);
   return isNaN(num) ? 0 : num;
 };
-
 const calcularTIR = (fluxos, chute = 0.1) => {
   let taxa = chute, iter = 0;
   const max = 1000, eps = 1e-4;
@@ -29,12 +28,14 @@ const calcularTIR = (fluxos, chute = 0.1) => {
   return iter < max ? taxa * 100 : 0;
 };
 
-// Logo padrão leve (data URI)
+/********************
+ * Logo
+ ********************/
 const ALVO_LOGO = "data:image/svg+xml,%3Csvg width='1200' height='400' viewBox='0 0 1200 400' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ctext x='50' y='300' font-family='Arial' font-size='280' font-weight='900' fill='%233A3A3A' letter-spacing='-10'%3EALVO%3C/text%3E%3Ccircle cx='950' cy='200' r='140' stroke='%233A3A3A' stroke-width='28' fill='none'/%3E%3Ccircle cx='950' cy='200' r='85' stroke='%233A3A3A' stroke-width='20' fill='none'/%3E%3Ctext x='1050' y='235' font-family='Arial' font-size='95' font-weight='700' fill='%2334747E'%3EBR%3C/text%3E%3C/svg%3E";
 const AlvoLogo = ({ size = 48 }) => <img src={ALVO_LOGO} alt="Alvo BR" style={{ height: size, width: "auto" }} />;
 
 /********************
- * PDF helpers (html2canvas + jsPDF)
+ * PDF libs
  ********************/
 async function ensurePdfLibs() {
   const needH2C = typeof window !== "undefined" && !window.html2canvas;
@@ -58,88 +59,79 @@ function loadScript(src) {
  * Defaults
  ********************/
 const sample = {
-  // Empresa/contato
   company: "Alvo BR Imobiliária",
   date: new Date().toISOString().slice(0, 10),
   consultor: "Nome do Consultor",
   phone: "(47) 9 9999-9999",
   email: "contato@alvobr.com.br",
   siteUrl: "https://alvobr.com.br",
-  // Cliente
   cliente: "Nome do Cliente",
   clientePhone: "(47) 9 8888-8888",
   clienteEmail: "cliente@email.com",
   recursosCliente: 0,
-  // Empreendimento
   empreendimento: "Nome do Empreendimento",
   endereco: "Endereço completo — Itajaí/SC",
   construtora: "Nome da Construtora",
   tipo: "Apartamento 2 suítes",
   area: 74,
   entrega: "Dezembro/2026",
-  // Comercial
   valorTotal: 980000,
   splitPreset: "10-45-45",
   entradaValor: 98000,
   entradaPercent: 10,
   obraParcelaValor: 12250,
   duranteObraParcelas: 36,
+  duranteObraPercent: 45,
   chavesPercent: 45,
-  chavesForma: "financiamento", // financiamento | avista | posConstrutora
+  chavesForma: "financiamento",
   chavesPosParcelas: 0,
-  // Balões opcionais
   balaoValor: 0,
   balaoQuantidade: 0,
   balaoFrequenciaMeses: 6,
-  // Projeções (prazo de obra usado como padrão da valorização)
-  prazoObraAnos: 3,
-  apreciacao: 18, // % a.a.
-  // Short stay: fixo 5 anos após entrega
-  // validade
+  prazoObraAnos: 3,      // <- vira o prazo padrão de valorização
+  apreciacao: 18,        // % a.a.
+  adrDiaria: 350, ocupacao: 70, custosOperacionais: 30,
   validade: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
 };
 
 /********************
- * Component
+ * App (duas páginas)
  ********************/
-export default function AlvoPropostasV4() {
+export default function App() {
+  const [step, setStep] = useState("setup"); // "setup" | "resultado"
   const [data, setData] = useState(sample);
-  const resultRef = useRef(null); // <- SOMENTE resultado entra no PDF
+  const resultRef = useRef(null);
 
-  // Preset 10/45/45 etc.
+  /* Preset 10/45/45 etc. */
   useEffect(() => {
     if (!data.splitPreset || data.splitPreset === "custom") return;
     const [e, o, c] = data.splitPreset.split("-").map(Number);
     setData((d) => ({
       ...d,
       entradaPercent: e,
-      chavesPercent: c,
-      // mantemos obra por parcela; % da obra fica como fallback p/ resumo
       duranteObraPercent: o,
+      chavesPercent: c,
       entradaValor: d.valorTotal ? (d.valorTotal * e) / 100 : d.entradaValor,
     }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.splitPreset]);
 
-  // Quando corretor informa PRAZO DE OBRA, use como padrão da valorização (cenários)
-  // e, se fizer sentido, ajuste parcelas de obra para anos*12 (sem atrapalhar edições manuais posteriores)
+  /* prazo da obra -> prazo padrão de valorização + ajusta parcelas obra se padrão */
   useEffect(() => {
     setData((d) => {
       const anos = Number(d.prazoObraAnos || 0);
       if (!anos) return d;
       const alvoParcelas = anos * 12;
-      const deveAtualizarParcelas =
-        !d.duranteObraParcelas || d.duranteObraParcelas === (Number(sample.prazoObraAnos) * 12);
+      const aindaPadrao = !d.duranteObraParcelas || d.duranteObraParcelas === sample.prazoObraAnos * 12;
       return {
         ...d,
-        // padrão da valorização
         prazoEntrega: anos,
-        // sincroniza parcelas apenas se ainda estavam no padrão inicial
-        duranteObraParcelas: deveAtualizarParcelas ? alvoParcelas : d.duranteObraParcelas,
+        duranteObraParcelas: aindaPadrao ? alvoParcelas : d.duranteObraParcelas,
       };
     });
   }, [data.prazoObraAnos]);
 
+  /* Cálculos base */
   const valores = useMemo(() => {
     const total = Number(data.valorTotal || 0);
     const entradaValor = Number(data.entradaValor || 0) || (total * Number(data.entradaPercent || 0)) / 100;
@@ -163,11 +155,10 @@ export default function AlvoPropostasV4() {
       ? entradaValor + duranteObraTotal
       : entradaValor + duranteObraTotal + chavesTotal;
 
-    // Saldo a compor
     const recursosCliente = Number(data.recursosCliente || 0);
     const saldoACompor = Math.max(0, valorInvestidoReal - recursosCliente);
 
-    // Cronograma (datas)
+    // cronograma (datas)
     const hoje = new Date();
     const schedule = [];
     if (entradaValor > 0) schedule.push({ tipo: "Entrada", data: hoje, valor: entradaValor });
@@ -186,7 +177,7 @@ export default function AlvoPropostasV4() {
         schedule.push({ tipo: `Pós-chaves ${i}/${pcs}`, data: d, valor: chavesTotal / Math.max(pcs, 1) });
       }
     }
-    // Balões
+    // balões
     const q = Math.max(0, Number(data.balaoQuantidade || 0));
     const vBalao = Math.max(0, Number(data.balaoValor || 0));
     const freq = Math.max(1, Number(data.balaoFrequenciaMeses || 1));
@@ -206,7 +197,7 @@ export default function AlvoPropostasV4() {
     };
   }, [data]);
 
-  // Fluxos para TIR (base)
+  /* Fluxos p/ TIR */
   const buildFluxosBase = (incluirChaves = true) => {
     const fluxos = [];
     fluxos.push(-valores.entradaValor);
@@ -218,11 +209,10 @@ export default function AlvoPropostasV4() {
         const pcs = Number(data.chavesPosParcelas || 0);
         for (let i = 0; i < pcs; i++) fluxos.push(-(valores.chavesTotal / Math.max(pcs, 1)));
       } else {
-        // financiamento: carência ilustrativa de 12 meses
         for (let i = 0; i < 12; i++) fluxos.push(0);
       }
     }
-    // Balões
+    // balões
     const q = Math.max(0, Number(data.balaoQuantidade || 0));
     const vBalao = Math.max(0, Number(data.balaoValor || 0));
     const freq = Math.max(1, Number(data.balaoFrequenciaMeses || 1));
@@ -238,7 +228,7 @@ export default function AlvoPropostasV4() {
     return fluxos;
   };
 
-  // Cenário 1 — Revenda (prazo = prazo de obra)
+  /* Cenários */
   const cenario1 = useMemo(() => {
     const anos = Number(data.prazoEntrega || data.prazoObraAnos || 0);
     const taxa = Number(data.apreciacao || 0) / 100;
@@ -253,7 +243,6 @@ export default function AlvoPropostasV4() {
     return { valorFinal, lucro, roi, roas, tir: tirAnual, prazo: anos };
   }, [valores, data]);
 
-  // Cenário 2 — Short Stay (sempre 5 anos após a entrega)
   const cenario2 = useMemo(() => {
     const anosEntrega = Number(data.prazoEntrega || data.prazoObraAnos || 0);
     const taxa = Number(data.apreciacao || 0) / 100;
@@ -266,7 +255,7 @@ export default function AlvoPropostasV4() {
     const receitaMensalBruta = adrDiaria * ocupacao * 30;
     const aluguelLiquido = receitaMensalBruta * (1 - custos);
 
-    const mesesOperacao = 5 * 12; // << fixo 5 anos
+    const mesesOperacao = 5 * 12; // fixo 5 anos
     const rendaAcumulada = aluguelLiquido * mesesOperacao;
 
     const retornoTotal = patrimonioAcrescido + rendaAcumulada;
@@ -280,207 +269,259 @@ export default function AlvoPropostasV4() {
     const tir = calcularTIR(fluxos);
     const tirAnual = (Math.pow(1 + tir / 100, 12) - 1) * 100;
 
-    return {
-      valorFinal, patrimonioAcrescido, adrDiaria, receitaMensalBruta, aluguelLiquido,
-      aluguelAnual: aluguelLiquido * 12, rendaAcumulada, retornoTotal, roi, roas, tir: tirAnual,
-      prazoTotal: anosEntrega + 5,
-    };
+    return { valorFinal, patrimonioAcrescido, adrDiaria, receitaMensalBruta, aluguelLiquido, rendaAcumulada, retornoTotal, roi, roas, tir: tirAnual, prazoTotal: anosEntrega + 5 };
   }, [valores, data]);
 
-  // Handlers
+  /* Handlers */
   const handle = (k) => (e) => setData((d) => ({ ...d, [k]: e.target.value }));
   const handleNumeric = (k) => (e) => setData((d) => ({ ...d, [k]: currencyToNumber(e.target.value) }));
   const handlePercent = (k) => (e) => {
     const num = parseFloat((e.target.value + "").replace(",", "."));
     setData((d) => ({ ...d, [k]: isNaN(num) ? 0 : num }));
   };
+
+  /* PDF multipágina: usa jsPDF.html, só pega resultRef */
+  const savePDF = async () => {
+    await ensurePdfLibs();
+    const { jsPDF } = window.jspdf;
+    const node = resultRef.current;
+    const pdf = new jsPDF("l", "mm", "a4"); // retrato multipágina
+    await pdf.html(node, {
+      margin: [10, 10, 12, 10],
+      autoPaging: "text", // quebra automática
+      html2canvas: { scale: 2, useCORS: true },
+      x: 0, y: 0, width: 190, // ~ A4 margem
+      windowWidth: node.scrollWidth,
+    });
+    const file = `Proposta_Alvo_${(data.cliente || "cliente").replace(/\s+/g, "_")}.pdf`;
+    pdf.save(file);
+  };
+
+  const gerarProposta = async () => {
+    setStep("resultado");
+    // espera 1 frame para montar a página de resultado, e gera PDF
+    setTimeout(() => savePDF(), 0);
+  };
+
   const fillExample = () => setData(sample);
   const clearAll = () => setData({});
 
-  // PDF: salva SOMENTE o resultado (resultRef)
-  const savePDF = async () => {
-    try {
-      await ensurePdfLibs();
-      const node = resultRef.current;
-      if (!node) return;
-      node.style.background = "#ffffff";
-      const canvas = await window.html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new window.jspdf.jsPDF("l", "mm", "a4"); // paisagem
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth;
-      const imgHeight = canvas.height * (imgWidth / canvas.width);
-      let position = 0, heightLeft = imgHeight;
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, undefined, "FAST");
-      heightLeft -= pageHeight;
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight, undefined, "FAST");
-        heightLeft -= pageHeight;
-      }
-      const fileName = `Proposta_Alvo_${(data.cliente || "cliente").replace(/\s+/g, "_")}.pdf`;
-      pdf.save(fileName);
-    } catch (err) {
-      alert("Não foi possível gerar o PDF. Como alternativa, use o Imprimir do navegador.\n" + err.message);
-      window.print();
-    }
-  };
-
+  /***************
+   * UI
+   ***************/
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      {/* Top bar */}
+      {/* Topbar */}
       <div className="sticky top-0 z-40 backdrop-blur border-b bg-white/80">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex flex-wrap items-center gap-3">
+        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
           <AlvoLogo size={36} />
-          <div className="flex-1 min-w-[200px]">
-            <h1 className="text-xl font-semibold tracking-tight">Alvo Propostas</h1>
-            <p className="text-xs text-gray-500">Entrada de Dados (em cima) • Resultado (abaixo) • PDF Paisagem</p>
+          <div className="flex-1">
+            <h1 className="text-xl font-semibold">Alvo Propostas</h1>
+            <p className="text-xs text-gray-500">Página {step === "setup" ? "de Edição" : "da Proposta"} · PDF multipágina</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={fillExample} className="px-3 py-2 rounded-2xl bg-white shadow-sm border hover:bg-gray-50 text-sm">Exemplo</button>
-            <button onClick={clearAll} className="px-3 py-2 rounded-2xl bg-white shadow-sm border hover:bg-gray-50 text-sm">Limpar</button>
-            <button onClick={savePDF} className="px-3 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium shadow">Baixar PDF</button>
+            <button onClick={fillExample} className="px-3 py-2 rounded-2xl bg-white shadow-sm border text-sm">Exemplo</button>
+            <button onClick={clearAll} className="px-3 py-2 rounded-2xl bg-white shadow-sm border text-sm">Limpar</button>
+            {step === "resultado" ? (
+              <>
+                <button onClick={() => setStep("setup")} className="px-3 py-2 rounded-2xl bg-white shadow-sm border text-sm">Voltar ao Setup</button>
+                <button onClick={savePDF} className="px-3 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm">Baixar PDF</button>
+              </>
+            ) : (
+              <button onClick={gerarProposta} className="px-3 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm">Gerar Proposta (PDF)</button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ====== PARTE DO CORRETOR (SETUP) ====== */}
-      <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-5 gap-6 p-4">
-        {/* Coluna esquerda: dados do corretor */}
-        <div className="lg:col-span-2 space-y-4">
-          <Card title="Empresa">
-            <div className="grid grid-cols-2 gap-3">
-              <Input label="Empresa" value={data.company || ""} onChange={handle("company")} />
-              <Input label="Data" value={data.date || ""} onChange={handle("date")} />
-              <Input label="Consultor" value={data.consultor || ""} onChange={handle("consultor")} />
-              <Input label="Telefone" value={data.phone || ""} onChange={handle("phone")} />
-              <Input label="E-mail" value={data.email || ""} onChange={handle("email")} />
-              <Input label="Site (URL)" value={data.siteUrl || ""} onChange={handle("siteUrl")} placeholder="https://alvobr.com.br" />
-            </div>
-          </Card>
-
-          <Card title="Cliente">
-            <div className="grid grid-cols-2 gap-3">
-              <Input label="Nome" value={data.cliente || ""} onChange={handle("cliente")} />
-              <Input label="Telefone" value={data.clientePhone || ""} onChange={handle("clientePhone")} />
-              <Input label="E-mail" value={data.clienteEmail || ""} onChange={handle("clienteEmail")} />
-              <Input label="Recursos disponíveis (R$)" value={data.recursosCliente ?? ""} onChange={handleNumeric("recursosCliente")} />
-            </div>
-          </Card>
-
-          <Card title="Empreendimento">
-            <div className="grid grid-cols-2 gap-3">
-              <Input label="Nome" value={data.empreendimento || ""} onChange={handle("empreendimento")} />
-              <Input label="Endereço" value={data.endereco || ""} onChange={handle("endereco")} />
-              <Input label="Construtora" value={data.construtora || ""} onChange={handle("construtora")} />
-              <Input label="Tipo" value={data.tipo || ""} onChange={handle("tipo")} />
-              <Input label="Área (m²)" value={data.area ?? ""} onChange={handleNumeric("area")} />
-              <Input label="Entrega (texto)" value={data.entrega || ""} onChange={handle("entrega")} />
-            </div>
-          </Card>
-
-          {/* FLUXO SIMPLES */}
-          <Card title="Fluxo de Pagamento (Simples)">
-            <div className="space-y-4">
-              {/* Passo 1 - Entrada */}
-              <div className="rounded-xl border p-3 bg-slate-50">
-                <p className="text-sm font-semibold mb-2">1) Entrada</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Input label="Valor total do imóvel (R$)" value={data.valorTotal ?? ""} onChange={handleNumeric("valorTotal")} />
-                  <select
-                    className="w-full px-3 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    value={data.splitPreset}
-                    onChange={(e) => setData((d) => ({ ...d, splitPreset: e.target.value }))}
-                  >
-                    <option value="10-45-45">Preset 10 / 45 / 45</option>
-                    <option value="20-40-40">Preset 20 / 40 / 40</option>
-                    <option value="30-40-30">Preset 30 / 40 / 30</option>
-                    <option value="custom">Customizar</option>
-                  </select>
-                  <Input label="Entrada (%)" value={data.entradaPercent ?? ""} onChange={handlePercent("entradaPercent")} />
-                  <Input label="Entrada (R$)" value={data.entradaValor ?? ""} onChange={handleNumeric("entradaValor")} />
-                </div>
+      {step === "setup" ? (
+        /* ========== PÁGINA 1: SETUP ========== */
+        <div className="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-5 gap-6 p-4">
+          {/* esquerda */}
+          <div className="lg:col-span-2 space-y-4">
+            <Card title="Empresa">
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="Empresa" value={data.company || ""} onChange={handle("company")} />
+                <Input label="Data" value={data.date || ""} onChange={handle("date")} />
+                <Input label="Consultor" value={data.consultor || ""} onChange={handle("consultor")} />
+                <Input label="Telefone" value={data.phone || ""} onChange={handle("phone")} />
+                <Input label="E-mail" value={data.email || ""} onChange={handle("email")} />
+                <Input label="Site (URL)" value={data.siteUrl || ""} onChange={handle("siteUrl")} placeholder="https://alvobr.com.br" />
               </div>
+            </Card>
 
-              {/* Passo 2 - Obra */}
-              <div className="rounded-xl border p-3 bg-slate-50">
-                <p className="text-sm font-semibold mb-2">2) Durante a obra</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Input label="Parcela de obra (R$)" value={data.obraParcelaValor ?? ""} onChange={handleNumeric("obraParcelaValor")} />
-                  <Input label="Nº de parcelas de obra" value={data.duranteObraParcelas ?? ""} onChange={handleNumeric("duranteObraParcelas")} />
-                  <Input label="Prazo de obra (anos)" value={data.prazoObraAnos ?? ""} onChange={handleNumeric("prazoObraAnos")} />
-                  <Input label="Obra (% do total) — opcional" value={data.duranteObraPercent ?? ""} onChange={handlePercent("duranteObraPercent")} />
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  Dica: o <strong>prazo de obra</strong> define o <strong>prazo padrão de valorização</strong> nos cenários.
-                </p>
+            <Card title="Cliente">
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="Nome" value={data.cliente || ""} onChange={handle("cliente")} />
+                <Input label="Telefone" value={data.clientePhone || ""} onChange={handle("clientePhone")} />
+                <Input label="E-mail" value={data.clienteEmail || ""} onChange={handle("clienteEmail")} />
+                <Input label="Recursos disponíveis (R$)" value={data.recursosCliente ?? ""} onChange={handleNumeric("recursosCliente")} />
               </div>
+            </Card>
 
-              {/* Passo 3 - Chaves */}
-              <div className="rounded-xl border p-3 bg-slate-50">
-                <p className="text-sm font-semibold mb-2">3) Na entrega das chaves</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="block">
-                    <div className="text-xs text-gray-600 mb-1">Forma</div>
-                    <select
-                      className="w-full px-3 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                      value={data.chavesForma}
-                      onChange={(e) => setData((d) => ({ ...d, chavesForma: e.target.value }))}
-                    >
-                      <option value="financiamento">Financiamento bancário</option>
-                      <option value="avista">À vista na entrega</option>
-                      <option value="posConstrutora">Parcelado com a construtora (pós-chaves)</option>
+            <Card title="Empreendimento">
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="Nome" value={data.empreendimento || ""} onChange={handle("empreendimento")} />
+                <Input label="Endereço" value={data.endereco || ""} onChange={handle("endereco")} />
+                <Input label="Construtora" value={data.construtora || ""} onChange={handle("construtora")} />
+                <Input label="Tipo" value={data.tipo || ""} onChange={handle("tipo")} />
+                <Input label="Área (m²)" value={data.area ?? ""} onChange={handleNumeric("area")} />
+                <Input label="Entrega (texto)" value={data.entrega || ""} onChange={handle("entrega")} />
+              </div>
+            </Card>
+
+            <Card title="Short Stay (parâmetros)">
+              <div className="grid grid-cols-2 gap-3">
+                <Input label="ADR (R$)" value={data.adrDiaria ?? ""} onChange={handleNumeric("adrDiaria")} />
+                <Input label="Ocupação (%)" value={data.ocupacao ?? ""} onChange={handlePercent("ocupacao")} />
+                <Input label="Custos operacionais (%)" value={data.custosOperacionais ?? ""} onChange={handlePercent("custosOperacionais")} />
+                <Input label="Prazo de obra (anos)" value={data.prazoObraAnos ?? ""} onChange={handleNumeric("prazoObraAnos")} />
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Os <strong>5 anos</strong> de short stay são fixos após a entrega.</p>
+            </Card>
+          </div>
+
+          {/* direita - fluxo simples */}
+          <div className="lg:col-span-3 space-y-4">
+            <Card title="Fluxo de Pagamento (simples)">
+              <div className="space-y-4">
+                {/* Entrada */}
+                <div className="rounded-xl border p-3 bg-slate-50">
+                  <p className="text-sm font-semibold mb-2">1) Entrada</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input label="Valor total do imóvel (R$)" value={data.valorTotal ?? ""} onChange={handleNumeric("valorTotal")} />
+                    <select className="w-full px-3 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      value={data.splitPreset} onChange={(e)=>setData(d=>({...d, splitPreset: e.target.value}))}>
+                      <option value="10-45-45">Preset 10 / 45 / 45</option>
+                      <option value="20-40-40">Preset 20 / 40 / 40</option>
+                      <option value="30-40-30">Preset 30 / 40 / 30</option>
+                      <option value="custom">Customizar</option>
                     </select>
-                  </label>
-                  <Input label="Chaves (% do total)" value={data.chavesPercent ?? ""} onChange={handlePercent("chavesPercent")} />
-                  {data.chavesForma === "posConstrutora" && (
-                    <Input label="Parcelas pós-chaves" value={data.chavesPosParcelas ?? ""} onChange={handleNumeric("chavesPosParcelas")} />
-                  )}
+                    <Input label="Entrada (%)" value={data.entradaPercent ?? ""} onChange={handlePercent("entradaPercent")} />
+                    <Input label="Entrada (R$)" value={data.entradaValor ?? ""} onChange={handleNumeric("entradaValor")} />
+                  </div>
+                </div>
+
+                {/* Obra */}
+                <div className="rounded-xl border p-3 bg-slate-50">
+                  <p className="text-sm font-semibold mb-2">2) Durante a obra</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input label="Parcela de obra (R$)" value={data.obraParcelaValor ?? ""} onChange={handleNumeric("obraParcelaValor")} />
+                    <Input label="Nº de parcelas de obra" value={data.duranteObraParcelas ?? ""} onChange={handleNumeric("duranteObraParcelas")} />
+                    <Input label="Obra (% do total) — opcional" value={data.duranteObraPercent ?? ""} onChange={handlePercent("duranteObraPercent")} />
+                  </div>
+                </div>
+
+                {/* Chaves */}
+                <div className="rounded-xl border p-3 bg-slate-50">
+                  <p className="text-sm font-semibold mb-2">3) Na entrega das chaves</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block">
+                      <div className="text-xs text-gray-600 mb-1">Forma</div>
+                      <select className="w-full px-3 py-2 rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        value={data.chavesForma} onChange={(e)=>setData(d=>({...d, chavesForma: e.target.value}))}>
+                        <option value="financiamento">Financiamento bancário</option>
+                        <option value="avista">À vista na entrega</option>
+                        <option value="posConstrutora">Parcelado com a construtora (pós-chaves)</option>
+                      </select>
+                    </label>
+                    <Input label="Chaves (% do total)" value={data.chavesPercent ?? ""} onChange={handlePercent("chavesPercent")} />
+                    {data.chavesForma === "posConstrutora" && (
+                      <Input label="Parcelas pós-chaves" value={data.chavesPosParcelas ?? ""} onChange={handleNumeric("chavesPosParcelas")} />
+                    )}
+                  </div>
+                </div>
+
+                {/* Balões */}
+                <div className="grid grid-cols-3 gap-3">
+                  <Input label="Balões (R$)" value={data.balaoValor ?? ""} onChange={handleNumeric("balaoValor")} />
+                  <Input label="Qtde de balões" value={data.balaoQuantidade ?? ""} onChange={handleNumeric("balaoQuantidade")} />
+                  <Input label="Frequência (meses)" value={data.balaoFrequenciaMeses ?? ""} onChange={handleNumeric("balaoFrequenciaMeses")} />
+                </div>
+
+                {/* Resumo do fluxo */}
+                <div className="bg-white border rounded-2xl p-4 shadow-sm text-sm">
+                  <p className="font-semibold text-emerald-800 mb-2">Resumo</p>
+                  <ul className="space-y-1">
+                    <li>Entrada: <strong>{brl(valores.entradaValor)} ({pct(valores.entradaPercent)})</strong></li>
+                    <li>Obra: <strong>{brl(valores.duranteObraTotal)}</strong> em <strong>{data.duranteObraParcelas}x</strong> ({brl(valores.duranteObraParcela)}/mês) — {pct(valores.duranteObraPercent)}</li>
+                    <li>Chaves: <strong>{brl(valores.chavesTotal)}</strong> {data.chavesForma === "financiamento" ? "(financ.)" : data.chavesForma === "posConstrutora" ? `em ${data.chavesPosParcelas || 0}x` : ""}</li>
+                  </ul>
+                  <div className="mt-3 rounded-xl bg-slate-50 border p-3">
+                    Investimento real: <strong>{brl(valores.valorInvestidoReal)}</strong><br />
+                    Recursos do cliente: <strong>{brl(valores.recursosCliente)}</strong><br />
+                    Saldo a compor: <strong className="text-rose-700">{brl(valores.saldoACompor)}</strong>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </div>
+      ) : (
+        /* ========== PÁGINA 2: RESULTADO (vai para o PDF) ========== */
+        <div className="mx-auto max-w-4xl p-4">
+          <div ref={resultRef} className="bg-white shadow-md rounded-2xl overflow-hidden ring-1 ring-slate-200">
+            {/* capa */}
+            <section className="p-8 page">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-3xl font-extrabold tracking-tight">Proposta Comercial</h2>
+                  <p className="text-sm text-gray-500">{data.company}</p>
+                  <p className="text-sm text-gray-500">{data.date} · {data.consultor}</p>
+                  <p className="text-sm text-gray-500">{data.phone} · {data.email}</p>
+                  {data.siteUrl && <a href={data.siteUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline break-all">{data.siteUrl}</a>}
+                </div>
+                <AlvoLogo size={72} />
+              </div>
+              <p className="mt-6 text-gray-700">A <strong>Alvo BR</strong> é especializada em curadoria de investimentos imobiliários, unindo dados, método e resultado.</p>
+              <p className="mt-6 text-xs text-gray-500">Validade desta proposta: <strong>{data.validade}</strong></p>
+            </section>
+
+            {/* ficha cliente/empreendimento */}
+            <section className="p-8 page page-break">
+              <h3 className="font-semibold text-lg mb-3">1. Dados</h3>
+              <div className="grid grid-cols-2 gap-6 text-sm">
+                <div>
+                  <p className="font-semibold mb-1">Cliente</p>
+                  <DataRow k="Nome" v={data.cliente} />
+                  <DataRow k="Telefone" v={data.clientePhone} />
+                  <DataRow k="E-mail" v={data.clienteEmail} />
+                </div>
+                <div>
+                  <p className="font-semibold mb-1">Empreendimento</p>
+                  <DataRow k="Nome" v={data.empreendimento} />
+                  <DataRow k="Local" v={data.endereco} />
+                  <DataRow k="Construtora" v={data.construtora} />
+                  <DataRow k="Tipo" v={data.tipo} />
+                  <DataRow k="Área" v={data.area ? `${data.area} m²` : ""} />
+                  <DataRow k="Entrega" v={data.entrega} />
+                </div>
+              </div>
+            </section>
+
+            {/* condições / cronograma resumido */}
+            <section className="p-8 page page-break">
+              <h3 className="font-semibold text-lg mb-3">2. Condições Comerciais</h3>
+              <div className="grid grid-cols-2 gap-6 text-sm">
+                <div>
+                  <DataRow k="Valor total" v={brl(valores.total)} />
+                  <DataRow k="Entrada" v={`${brl(valores.entradaValor)} (${pct(valores.entradaPercent)})`} />
+                  <DataRow k="Obra" v={`${brl(valores.duranteObraTotal)} em ${data.duranteObraParcelas || 0}x (${brl(valores.duranteObraParcela)})`} />
+                  <DataRow k="Chaves" v={`${brl(valores.chavesTotal)}${data.chavesForma === "financiamento" ? " (Financ.)" : data.chavesForma === "posConstrutora" ? ` em ${data.chavesPosParcelas || 0}x` : ""}`} />
+                </div>
+                <div>
+                  <p className="font-semibold mb-1">Resumo Financeiro</p>
+                  <DataRow k="Investimento real" v={brl(valores.valorInvestidoReal)} />
+                  <DataRow k="Recursos do cliente" v={brl(valores.recursosCliente)} />
+                  <DataRow k="Saldo a compor" v={brl(valores.saldoACompor)} />
                 </div>
               </div>
 
-              {/* Opcionais */}
-              <div className="grid grid-cols-3 gap-3">
-                <Input label="Balões (R$)" value={data.balaoValor ?? ""} onChange={handleNumeric("balaoValor")} />
-                <Input label="Qtde de balões" value={data.balaoQuantidade ?? ""} onChange={handleNumeric("balaoQuantidade")} />
-                <Input label="Frequência (meses)" value={data.balaoFrequenciaMeses ?? ""} onChange={handleNumeric("balaoFrequenciaMeses")} />
-              </div>
-
-              {/* Resumo rápido para o corretor */}
-              <div className="bg-white border rounded-2xl p-4 shadow-sm">
-                <div className="grid md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="font-semibold text-emerald-800 mb-2">Resumo do fluxo</p>
-                    <ul className="space-y-1">
-                      <li>Entrada: <strong>{brl(valores.entradaValor)} ({pct(valores.entradaPercent)})</strong></li>
-                      <li>Obra: <strong>{brl(valores.duranteObraTotal)}</strong> em <strong>{data.duranteObraParcelas}x</strong> ({brl(valores.duranteObraParcela)}/mês) — {pct(valores.duranteObraPercent)}</li>
-                      <li>Chaves: <strong>{brl(valores.chavesTotal)}</strong> {data.chavesForma === "financiamento" ? "(financ.)" : data.chavesForma === "posConstrutora" ? `em ${data.chavesPosParcelas || 0}x` : ""}</li>
-                      {Number(data.balaoQuantidade) > 0 && Number(data.balaoValor) > 0 && (
-                        <li>Balões: <strong>{data.balaoQuantidade}× {brl(data.balaoValor)}</strong> a cada <strong>{data.balaoFrequenciaMeses}</strong> meses</li>
-                      )}
-                    </ul>
-                  </div>
-                  <div className="rounded-xl bg-slate-50 border p-3">
-                    <p>Investimento real</p>
-                    <p className="text-2xl font-bold">{brl(valores.valorInvestidoReal)}</p>
-                    <div className="mt-2">Recursos do cliente: <strong>{brl(valores.recursosCliente)}</strong></div>
-                    <div className="mt-1">Saldo a compor: <strong className="text-rose-700">{brl(valores.saldoACompor)}</strong></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Cronograma detalhado (opcional) */}
-              <details className="bg-white border rounded-2xl p-4 shadow-sm">
-                <summary className="cursor-pointer font-medium">Ver cronograma detalhado</summary>
-                <div className="mt-3 max-h-64 overflow-auto text-sm">
+              <details className="mt-4">
+                <summary className="cursor-pointer text-sm font-medium">Ver cronograma detalhado</summary>
+                <div className="mt-2 max-h-72 overflow-auto text-sm">
                   <table className="w-full">
-                    <thead>
-                      <tr className="text-left text-gray-500 border-b">
-                        <th className="py-2">Parcela</th><th>Data</th><th>Valor</th>
-                      </tr>
-                    </thead>
+                    <thead><tr className="text-left text-gray-500 border-b"><th className="py-2">Parcela</th><th>Data</th><th>Valor</th></tr></thead>
                     <tbody>
                       {valores.schedule.map((p, i) => (
                         <tr key={i} className="border-b last:border-0">
@@ -493,128 +534,75 @@ export default function AlvoPropostasV4() {
                   </table>
                 </div>
               </details>
-            </div>
-          </Card>
-        </div>
-
-        {/* ====== PARTE DE BAIXO (RESULTADO) — somente isso vai para o PDF ====== */}
-        <div className="lg:col-span-3">
-          <div ref={resultRef} className="bg-white shadow-md rounded-3xl overflow-hidden ring-1 ring-slate-200">
-            {/* Cabeçalho do resultado */}
-            <div className="p-6 border-b bg-gradient-to-r from-slate-50 to-white">
-              <div className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <h2 className="text-2xl font-extrabold tracking-tight">Proposta Comercial</h2>
-                  <p className="text-sm text-gray-500 truncate">{data.company}</p>
-                  <p className="text-sm text-gray-500">{data.date} · {data.consultor}</p>
-                  <p className="text-sm text-gray-500">{data.phone} · {data.email}</p>
-                  {data.siteUrl && <a href={data.siteUrl} target="_blank" rel="noreferrer" className="text-xs text-blue-600 underline break-all">{data.siteUrl}</a>}
-                </div>
-                <AlvoLogo size={56} />
-              </div>
-            </div>
-
-            {/* Bloco Condições resumidas */}
-            <section className="p-6">
-              <h3 className="font-semibold text-lg mb-2">Condições</h3>
-              <div className="space-y-1 text-sm">
-                <DataRow k="Valor total" v={brl(valores.total)} />
-                <DataRow k="Entrada" v={`${brl(valores.entradaValor)} (${pct(valores.entradaPercent)})`} />
-                <DataRow k="Obra" v={`${brl(valores.duranteObraTotal)} em ${data.duranteObraParcelas || 0}x (${brl(valores.duranteObraParcela)})`} />
-                <DataRow k="Chaves" v={`${brl(valores.chavesTotal)}${data.chavesForma === "financiamento" ? " (Financ.)" : data.chavesForma === "posConstrutora" ? ` em ${data.chavesPosParcelas || 0}x` : ""}`} />
-                {Number(data.balaoQuantidade) > 0 && Number(data.balaoValor) > 0 && (
-                  <DataRow k="Balões" v={`${data.balaoQuantidade}× ${brl(data.balaoValor)} a cada ${data.balaoFrequenciaMeses} meses`} />
-                )}
-                <DataRow k="Investimento real" v={brl(valores.valorInvestidoReal)} />
-                <DataRow k="Validade" v={data.validade} />
-              </div>
             </section>
 
-            {/* Cenário 1 */}
-            <section className="p-6 pt-0">
-              <h3 className="font-semibold text-lg mb-3">Cenário 1: Revenda (prazo: {data.prazoEntrega || data.prazoObraAnos} anos)</h3>
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-                <table className="w-full text-sm">
+            {/* CENÁRIOS */}
+            <section className="p-8 page page-break">
+              <h3 className="font-semibold text-lg mb-3">3. Cenário 1 — Revenda</h3>
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-sm">
+                <table className="w-full">
                   <tbody>
-                    <TR label="Valor hoje" value={brl(valores.total)} />
+                    <TR label="Prazo (anos)" value={String(data.prazoEntrega || data.prazoObraAnos || 0)} />
                     <TR label="Valorização anual" value={pct(data.apreciacao)} />
+                    <TR label="Valor hoje" value={brl(valores.total)} />
                     <TR label="Valor final" value={brl(cenario1.valorFinal)} />
                     <TR label="Lucro" value={brl(cenario1.lucro)} />
-                    <tr className="border-t-2 border-emerald-600">
-                      <td className="p-3 font-bold text-emerald-800">ROI</td>
-                      <td className="p-3 font-bold text-emerald-800 text-lg">{pct(cenario1.roi)}</td>
-                    </tr>
-                    <tr className="bg-emerald-100">
-                      <td className="p-3 font-bold text-emerald-900">ROAS</td>
-                      <td className="p-3 font-bold text-emerald-900 text-lg">{pct(cenario1.roas)}</td>
-                    </tr>
+                    <tr className="border-t-2 border-emerald-600"><td className="p-3 font-bold text-emerald-800">ROI</td><td className="p-3 font-bold text-emerald-800">{pct(cenario1.roi)}</td></tr>
+                    <tr className="bg-emerald-100"><td className="p-3 font-bold text-emerald-900">ROAS</td><td className="p-3 font-bold text-emerald-900">{pct(cenario1.roas)}</td></tr>
                     <TR label="TIR (a.a.)" value={pct(cenario1.tir)} />
                   </tbody>
                 </table>
               </div>
             </section>
 
-            {/* Cenário 2 */}
-            <section className="p-6 pt-0">
-              <h3 className="font-semibold text-lg mb-3">Cenário 2: Short Stay (5 anos após entrega)</h3>
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <section className="p-8 page page-break">
+              <h3 className="font-semibold text-lg mb-3">4. Cenário 2 — Short Stay (5 anos após entrega)</h3>
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm">
                 <div className="mb-3 p-3 bg-white rounded border text-xs">
                   <p className="font-semibold mb-1">Parâmetros</p>
                   <ul className="space-y-1">
                     <li>• ADR: {brl(cenario2.adrDiaria)}</li>
-                    <li>• Ocupação: {data.ocupacao}% = {Math.round((data.ocupacao || 0) * 30 / 100)} diárias/mês</li>
+                    <li>• Ocupação: {data.ocupacao}% ≈ {Math.round((data.ocupacao || 0) * 30 / 100)} diárias/mês</li>
                     <li>• Receita bruta: {brl(cenario2.receitaMensalBruta)}/mês</li>
-                    <li>• Custos operacionais: {data.custosOperacionais}%</li>
+                    <li>• Custos: {data.custosOperacionais}%</li>
                     <li>• <strong>Líquido: {brl(cenario2.aluguelLiquido)}/mês</strong></li>
                   </ul>
                 </div>
-                <table className="w-full text-sm">
+                <table className="w-full">
                   <tbody>
-                    <tr className="bg-blue-100">
-                      <td className="p-3 font-bold">Renda Mensal</td>
-                      <td className="p-3 font-bold text-lg">{brl(cenario2.aluguelLiquido)}</td>
-                    </tr>
                     <TR label="Renda em 5 anos" value={brl(cenario2.rendaAcumulada)} />
-                    <TR label="Valorização até a entrega" value={brl(cenario2.patrimonioAcrescido)} />
+                    <TR label="Valorização até entrega" value={brl(cenario2.patrimonioAcrescido)} />
                     <TR label="Valor final" value={brl(cenario2.valorFinal)} />
-                    <tr className="border-t-2 bg-blue-200">
-                      <td className="p-3 font-bold">RETORNO TOTAL</td>
-                      <td className="p-3 font-bold text-xl">{brl(cenario2.retornoTotal)}</td>
-                    </tr>
-                    <tr className="border-t-2 bg-emerald-50">
-                      <td className="p-3 font-bold text-emerald-800">ROI</td>
-                      <td className="p-3 font-bold text-emerald-800 text-lg">{pct(cenario2.roi)}</td>
-                    </tr>
-                    <tr className="bg-emerald-100">
-                      <td className="p-3 font-bold text-emerald-900">ROAS</td>
-                      <td className="p-3 font-bold text-emerald-900 text-lg">{pct(cenario2.roas)}</td>
-                    </tr>
+                    <tr className="border-t-2 bg-blue-200"><td className="p-3 font-bold">RETORNO TOTAL</td><td className="p-3 font-bold">{brl(cenario2.retornoTotal)}</td></tr>
+                    <tr className="border-t-2 bg-emerald-50"><td className="p-3 font-bold text-emerald-800">ROI</td><td className="p-3 font-bold text-emerald-800">{pct(cenario2.roi)}</td></tr>
+                    <tr className="bg-emerald-100"><td className="p-3 font-bold text-emerald-900">ROAS</td><td className="p-3 font-bold text-emerald-900">{pct(cenario2.roas)}</td></tr>
                     <TR label="TIR (a.a.)" value={pct(cenario2.tir)} />
                   </tbody>
                 </table>
               </div>
             </section>
 
-            {/* Rodapé */}
-            <section className="p-6 pt-0">
+            {/* rodapé */}
+            <section className="p-8 page page-break">
               <p className="text-xs text-gray-500 italic">
-                * Estimativas baseadas em projeções de mercado.
-                <br />* ROI = retorno sobre valor total · ROAS = retorno sobre investimento real
+                * Estimativas baseadas em projeções de mercado. ROI = retorno sobre o valor total; ROAS = retorno sobre o investimento real.
               </p>
-              <div className="mt-4 text-xs text-gray-600">
+              <p className="text-xs text-gray-500 mt-2">
                 © {new Date().getFullYear()} Alvo BR — {data.company} · {data.phone} · {data.email}
-              </div>
+              </p>
             </section>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Print paisagem e esconder área de edição */}
+      {/* CSS para impressão e quebras */}
       <style>{`
+        .page { page-break-inside: avoid; }
+        .page-break { page-break-before: always; }
         @media print {
-          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          @page { margin: 12mm; size: A4 landscape; }
-          .sticky, .lg\\:col-span-2 { display: none !important; } /* esconde o SETUP */
+          @page { size: A4 portrait; margin: 12mm; }
+          .sticky { display: none !important; }
+          body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           .bg-emerald-50 { background-color: #ecfdf5 !important; }
           .bg-emerald-100 { background-color: #d1fae5 !important; }
           .bg-blue-50 { background-color: #eff6ff !important; }
@@ -631,7 +619,7 @@ export default function AlvoPropostasV4() {
  ********************/
 function Card({ title, children }) {
   return (
-    <div className="bg-white rounded-3xl shadow-sm border overflow-hidden ring-1 ring-slate-200">
+    <div className="bg-white rounded-2xl shadow-sm border overflow-hidden ring-1 ring-slate-200">
       <div className="px-4 py-3 border-b bg-gradient-to-r from-slate-50 to-white">
         <h4 className="font-semibold tracking-tight">{title}</h4>
       </div>
@@ -668,17 +656,3 @@ function TR({ label, value }) {
     </tr>
   );
 }
-
-/********************
- * Smoke tests
- ********************/
-(function runLightTests(){
-  try {
-    console.assert(currencyToNumber('R$ 1.234,56') === 1234.56, 'currencyToNumber');
-    console.assert(pct(12.345).startsWith('12'), 'pct formato');
-    const tir = calcularTIR([-100, 60, 60]);
-    console.assert(tir > 10 && tir < 50, 'TIR plausível');
-    // Cenários não devem quebrar sem dados
-    console.debug('[AlvoPropostasV4] testes rápidos OK');
-  } catch(e) { console.warn('[AlvoPropostasV4] teste falhou', e); }
-})();
