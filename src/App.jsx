@@ -510,7 +510,7 @@ export default function App() {
         <div className="mx-auto max-w-4xl p-4">
           <div ref={resultRef} className="paper mx-auto bg-white shadow-md rounded-2xl overflow-hidden ring-1 ring-slate-200">
             {/* capa */}
-            <section className=\"p-12 page\">
+            <section className="p-12 page">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-extrabold tracking-tight">Proposta Comercial</h2>
@@ -526,7 +526,7 @@ export default function App() {
             </section>
 
             {/* Bloco 1: Empresa & Cliente */}
-            <section className=\"p-12 page page-break\">
+            <section className="p-12 page page-break">
               <h3 className="font-semibold text-lg mb-3">1. Dados Gerais</h3>
               <div className="grid grid-cols-2 gap-8 text-[13px]">
                 <div>
@@ -546,7 +546,7 @@ export default function App() {
             </section>
 
             {/* Bloco 2: Empreendimento */}
-            <section className=\"p-12 page page-break\">
+            <section className="p-12 page page-break">
               <h3 className="font-semibold text-lg mb-3">2. Empreendimento</h3>
               <div className="grid grid-cols-2 gap-8 text-[13px]">
                 <div>
@@ -565,7 +565,7 @@ export default function App() {
             </section>
 
             {/* Bloco 3: Condições Comerciais com resumo simples (Entrada → Obra → Reforços → Chaves) */}
-            <section className=\"p-12 page page-break\">
+            <section className="p-12 page page-break">
               <h3 className="font-semibold text-lg mb-3">3. Condições Comerciais</h3>
               <div className="grid grid-cols-2 gap-8 text-[13px]">
                 <div>
@@ -579,21 +579,21 @@ export default function App() {
                   <DataRow k="Chaves" v={`${brl(valores.chavesTotal)}${data.chavesForma === "financiamento" ? " (Financ.)" : data.chavesForma === "posConstrutora" ? ` em ${data.chavesPosParcelas || 0}x` : " (à vista)"}`} />
                 </div>
                 <div>
-                  <p className=\"font-semibold mb-2\">Resumo Financeiro<\/p>
-                  <DataRow k=\"Investimento real\" v={brl(valores.valorInvestidoReal)} \/>
-                  <DataRow k=\"Saldo a compor\" v={brl(valores.saldoACompor)} \/>
+                  <p className="font-semibold mb-2">Resumo Financeiro</p>
+                  <DataRow k="Investimento real" v={brl(valores.valorInvestidoReal)} />
+                  <DataRow k="Saldo a compor" v={brl(valores.saldoACompor)} />
 
-                  <div className=\"mt-4\"><p className=\"font-semibold mb-2\">Totais do Fluxo<\/p>
-                    <DataRow k=\"Total entrada\" v={brl(valores.totalEntrada)} \/>
-                    <DataRow k=\"Total durante a obra\" v={brl(valores.totalObra)} \/>
-                    <DataRow k=\"Total reforços\" v={brl(valores.totalReforcos)} \/>
-                    {data.chavesForma === 'posConstrutora' && (<DataRow k=\"Pós-chaves (total)\" v={brl(valores.totalPosChaves)} \/>)}
-                    {data.chavesForma === 'financiamento' && (<DataRow k=\"Total financiado (banco)\" v={brl(valores.totalFinanciado)} \/>)}
-                    {data.chavesForma === 'avista' && (<DataRow k=\"Chaves à vista\" v={brl(valores.chavesTotal)} \/>)}
-                    <DataRow k=\"TOTAL do fluxo (sem financiamento)\" v={brl(valores.totalFluxoSemFin)} \/>
-                    <DataRow k=\"Subtotal até chaves\" v={brl(valores.totalAteChaves)} \/>
-                  <\/div>
-                <\/div>
+                  <div className="mt-4"><p className="font-semibold mb-2">Totais do Fluxo</p>
+                    <DataRow k="Total entrada" v={brl(valores.totalEntrada)} />
+                    <DataRow k="Total durante a obra" v={brl(valores.totalObra)} />
+                    <DataRow k="Total reforços" v={brl(valores.totalReforcos)} />
+                    {data.chavesForma === 'posConstrutora' && (<DataRow k="Pós-chaves (total)" v={brl(valores.totalPosChaves)} />)}
+                    {data.chavesForma === 'financiamento' && (<DataRow k="Total financiado (banco)" v={brl(valores.totalFinanciado)} />)}
+                    {data.chavesForma === 'avista' && (<DataRow k="Chaves à vista" v={brl(valores.chavesTotal)} />)}
+                    <DataRow k="TOTAL do fluxo (sem financiamento)" v={brl(valores.totalFluxoSemFin)} />
+                    <DataRow k="Subtotal até chaves" v={brl(valores.totalAteChaves)} />
+                  </div>
+                </div>
               </div>
 
               <details className="mt-4">
@@ -618,7 +618,7 @@ export default function App() {
             </section>
 
             {/* Bloco 4: Cenários */}
-            <section className=\"p-12 page page-break\">
+            <section className="p-12 page page-break">
               <h3 className="font-semibold text-lg mb-2">4. Cenário 1 — Revenda</h3>
               <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-[13px]">
                 <table className="w-full">
@@ -636,7 +636,7 @@ export default function App() {
               </div>
             </section>
 
-            <section className=\"p-12 page page-break\">
+            <section className="p-12 page page-break">
               <h3 className="font-semibold text-lg mb-2">5. Cenário 2 — Short Stay (5 anos após entrega)</h3>
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-[13px]">
                 <div className="mb-3 p-3 bg-white rounded border text-[12px] leading-6">
@@ -664,7 +664,7 @@ export default function App() {
             </section>
 
             {/* rodapé / letras pequenas */}
-            <section className=\"p-12 page page-break\">
+            <section className="p-12 page page-break">
               <p className="text-[11px] text-gray-500 italic leading-5">
                 * Estimativas baseadas em projeções de mercado. ROI = retorno sobre o valor total; ROAS = retorno sobre o investimento real.
               </p>
