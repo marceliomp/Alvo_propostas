@@ -569,25 +569,34 @@ export default function App() {
   ].filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
-      <header className="sticky top-0 z-40 backdrop-blur border-b bg-white/80">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100/80">
+      <header className="sticky top-0 z-40 backdrop-blur border-b border-white/10 bg-slate-900/70">
+        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3 text-white">
           <AlvoLogo size={36} />
           <div className="flex-1">
-            <h1 className="text-xl font-semibold">Alvo Propostas</h1>
-            <p className="text-xs text-gray-500">
+            <h1 className="text-xl font-semibold tracking-tight">Alvo Propostas</h1>
+            <p className="text-xs text-slate-200/80">
               Página {step === "setup" ? "de Edição" : "da Proposta"} · PDF multipágina A4
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={fillExample} className="px-3 py-2 rounded-2xl bg-white shadow-sm border text-sm">
+            <button
+              onClick={fillExample}
+              className="px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-sm font-medium text-white hover:bg-white/20 transition"
+            >
               Exemplo
             </button>
-            <button onClick={clearAll} className="px-3 py-2 rounded-2xl bg-white shadow-sm border text-sm">
+            <button
+              onClick={clearAll}
+              className="px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-sm font-medium text-white hover:bg-white/20 transition"
+            >
               Limpar
             </button>
             {step === "setup" && (
-              <button onClick={recalc} className="px-3 py-2 rounded-2xl bg-white shadow-sm border text-sm">
+              <button
+                onClick={recalc}
+                className="px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-sm font-medium text-white hover:bg-white/20 transition"
+              >
                 Recalcular
               </button>
             )}
@@ -596,20 +605,24 @@ export default function App() {
                 <select
                   value={pdfOrientation}
                   onChange={(event) => setPdfOrientation(event.target.value)}
-                  className="px-3 py-2 rounded-2xl bg-white shadow-sm border text-sm text-gray-600"
+                  className="px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-sm text-white/80 hover:bg-white/20 transition"
                 >
-                  <option value="portrait">PDF em retrato (A4)</option>
-                  <option value="landscape">PDF em paisagem (A4)</option>
+                  <option value="portrait" className="text-slate-900">
+                    PDF em retrato (A4)
+                  </option>
+                  <option value="landscape" className="text-slate-900">
+                    PDF em paisagem (A4)
+                  </option>
                 </select>
                 <button
                   onClick={() => setStep("setup")}
-                  className="px-3 py-2 rounded-2xl bg-white shadow-sm border text-sm"
+                  className="px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-sm font-medium text-white hover:bg-white/20 transition"
                 >
                   Voltar ao Setup
                 </button>
                 <button
                   onClick={savePDF}
-                  className="px-3 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm"
+                  className="px-3 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 transition"
                 >
                   Baixar PDF
                 </button>
@@ -617,7 +630,7 @@ export default function App() {
             ) : (
               <button
                 onClick={gerarProposta}
-                className="px-3 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm"
+                className="px-3 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 transition"
               >
                 Gerar Proposta
               </button>
@@ -627,7 +640,7 @@ export default function App() {
       </header>
 
       {step === "setup" ? (
-        <main className="mx-auto max-w-7xl p-6 space-y-6">
+        <main className="mx-auto max-w-7xl p-6 space-y-6 text-slate-900">
           <Card title="1) Empresa">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Input label="Empresa" value={data.company || ""} onChange={handle("company")} />
@@ -938,9 +951,9 @@ export default function App() {
           </Card>
         </main>
       ) : (
-        <main className="mx-auto max-w-7xl p-6">
-          <div ref={resultRef} className="paper mx-auto space-y-10">
-            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-8">
+        <main className="mx-auto max-w-7xl p-6 text-slate-900">
+          <div ref={resultRef} className="paper mx-auto space-y-8">
+            <section className="page bg-white/95 border border-slate-200 rounded-3xl shadow-xl p-10 space-y-6">
               <div className="flex flex-wrap items-start gap-6">
                 <AlvoLogo size={72} />
                 <div className="flex-1">
@@ -976,32 +989,31 @@ export default function App() {
                   <DataRow k="Preço/m²" v={valores.precoM2 ? brl(valores.precoM2) : "—"} />
                 </div>
               </div>
-            </section>
-
-            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
-              <h3 className="text-lg font-semibold text-slate-700">Resumo Executivo</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {resumoKPIs.map((kpi) => (
-                  <KPI
-                    key={kpi.title}
-                    title={kpi.title}
-                    value={kpi.value}
-                    highlight={kpi.highlight}
-                    subValue={kpi.subValue}
-                  />
-                ))}
+              <div className="pt-4 border-t border-dashed border-slate-200 space-y-4">
+                <h3 className="text-lg font-semibold text-slate-700">Resumo Executivo</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {resumoKPIs.map((kpi) => (
+                    <KPI
+                      key={kpi.title}
+                      title={kpi.title}
+                      value={kpi.value}
+                      highlight={kpi.highlight}
+                      subValue={kpi.subValue}
+                    />
+                  ))}
+                </div>
               </div>
             </section>
 
-            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
+            <section className="page bg-white/95 border border-slate-200 rounded-3xl shadow-xl p-10 space-y-5">
               <h3 className="text-lg font-semibold text-slate-700">Condições Comerciais</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-2xl border bg-white p-4 space-y-3 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="rounded-2xl border bg-white p-4 space-y-3 text-sm shadow-sm">
                   <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
                     Resumo do fluxo de pagamento
                   </h4>
                   <FluxoResumoCards items={resumoFluxo} />
-                  <div className="text-xs text-gray-600 space-y-1">
+                  <div className="p-3 rounded-xl bg-slate-50 text-xs text-gray-600 space-y-1">
                     <div className="flex justify-between">
                       <span>Pagamento do cliente</span>
                       <span className="font-semibold">{brl(totalFluxoCliente)}</span>
@@ -1012,7 +1024,7 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-                <div className="rounded-2xl border bg-slate-50 p-4 text-sm space-y-2">
+                <div className="rounded-2xl border bg-white p-4 space-y-2 text-sm shadow-sm">
                   <div className="flex justify-between">
                     <span>Investimento até as chaves</span>
                     <strong>{brl(valores.totalAteChaves)}</strong>
@@ -1049,196 +1061,225 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            </section>
-
-            {(data.arquivoOriginal || imagensGaleria.length > 0) && (
-              <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
-                <h3 className="text-lg font-semibold text-slate-700">Materiais do Empreendimento</h3>
-                {data.arquivoOriginal && (
-                  <div className="rounded-2xl border bg-slate-50 p-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-                    <div>
-                      <p className="font-semibold text-slate-700">Arquivo original</p>
-                      <p className="text-xs text-gray-500">{data.arquivoOriginal.name}</p>
-                    </div>
-                    <a
-                      href={data.arquivoOriginal.dataUrl}
-                      download={data.arquivoOriginal.name || "arquivo-original"}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-4 py-2 rounded-full border bg-white text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition"
-                    >
-                      Abrir arquivo
-                    </a>
-                  </div>
-                )}
-                {imagensGaleria.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {imagensGaleria.map((img, index) => (
-                      <figure
-                        key={`${img.name}-${index}`}
-                        className="border rounded-2xl overflow-hidden bg-white shadow-sm"
+              {(data.arquivoOriginal || imagensGaleria.length > 0) && (
+                <div className="pt-4 border-t border-dashed border-slate-200 space-y-4">
+                  <h4 className="text-sm font-semibold text-slate-700">Materiais do Empreendimento</h4>
+                  {data.arquivoOriginal && (
+                    <div className="rounded-2xl border bg-slate-50 p-4 flex flex-wrap items-center justify-between gap-3 text-sm shadow-sm">
+                      <div>
+                        <p className="font-semibold text-slate-700">Arquivo original</p>
+                        <p className="text-xs text-gray-500">{data.arquivoOriginal.name}</p>
+                      </div>
+                      <a
+                        href={data.arquivoOriginal.dataUrl}
+                        download={data.arquivoOriginal.name || "arquivo-original"}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-4 py-2 rounded-full border bg-white text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition"
                       >
-                        <img
-                          src={img.dataUrl}
-                          alt={img.name || `Imagem ${index + 1}`}
-                          className="w-full h-56 object-contain bg-slate-900/5"
-                        />
-                        <figcaption className="px-3 py-2 text-[11px] text-gray-500 truncate">
-                          {img.name || `Imagem ${index + 1}`}
-                        </figcaption>
-                      </figure>
-                    ))}
-                  </div>
-                )}
-              </section>
-            )}
+                        Abrir arquivo
+                      </a>
+                    </div>
+                  )}
+                  {imagensGaleria.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {imagensGaleria.map((img, index) => (
+                        <figure
+                          key={`${img.name}-${index}`}
+                          className="border rounded-2xl overflow-hidden bg-white shadow-sm"
+                        >
+                          <img
+                            src={img.dataUrl}
+                            alt={img.name || `Imagem ${index + 1}`}
+                            className="w-full h-52 object-contain bg-slate-900/5"
+                          />
+                          <figcaption className="px-3 py-2 text-[11px] text-gray-500 truncate">
+                            {img.name || `Imagem ${index + 1}`}
+                          </figcaption>
+                        </figure>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              <p className="text-[11px] text-gray-500">
+                Fórmulas: Valor total = SOMA(Entrada + Obra + Reforços + (Chaves à vista ou Pós-chaves)). Acumulado(i) =
+                Acumulado(i-1) + Valor(i). % do fluxo(i) = Acumulado(i) / Total do fluxo.
+              </p>
+            </section>
+            
 
-            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
+            <section className="page bg-white/95 border border-slate-200 rounded-3xl shadow-xl p-10 space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h3 className="text-lg font-semibold text-slate-700">Fluxo de Pagamento</h3>
                 <button
                   onClick={() => setShowFluxoDetalhado((prev) => !prev)}
-                  className="px-3 py-1 rounded-full border text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition"
+                  className="px-3 py-1.5 rounded-full border text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition"
                   type="button"
                   aria-expanded={showFluxoDetalhado}
                 >
                   {showFluxoDetalhado ? "Ocultar parcelas" : "Ver fluxo mês a mês"}
                 </button>
               </div>
-              <FluxoResumoCards
-                items={resumoFluxo}
-                columns="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
-              />
-              <div className="rounded-xl border overflow-hidden">
-                {showFluxoDetalhado ? (
-                  <table className="w-full text-[12px]">
-                    <thead>
-                      <tr className="bg-slate-50 border-b text-gray-600">
-                        <th className="p-2 text-left">#</th>
-                        <th className="p-2 text-left">Mês</th>
-                        <th className="p-2 text-left">Tipo</th>
-                        <th className="p-2 text-right">Valor</th>
-                        <th className="p-2 text-right">Acumulado</th>
-                        <th className="p-2 text-right">% do fluxo</th>
+              <div className="rounded-2xl border bg-white p-4 shadow-sm space-y-3">
+                <FluxoResumoCards items={resumoFluxo} columns="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span>Pagamento do cliente</span>
+                      <strong>{brl(valores.totalFluxoSemFin)}</strong>
+                    </div>
+                    {valores.totalPosChaves > 0 && (
+                      <div className="flex justify-between">
+                        <span>Parcelas pós-chaves</span>
+                        <strong>{brl(valores.totalPosChaves)}</strong>
+                      </div>
+                    )}
+                    {valores.totalFinanciado > 0 && (
+                      <div className="flex justify-between">
+                        <span>Financiado (banco)</span>
+                        <strong>{brl(valores.totalFinanciado)}</strong>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-emerald-700 font-semibold">
+                      <span>{saldoTitle}</span>
+                      <span>{brl(valores.saldoACompor)}</span>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span>Valor do imóvel</span>
+                      <strong>{brl(valores.total)}</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Pagamento total</span>
+                      <strong>{brl(valores.totalJaSomado)}</strong>
+                    </div>
+                    {valores.totalFinanciado > 0 && (
+                      <div className="flex justify-between text-xs text-gray-500">
+                        <span>Banco</span>
+                        <span>{brl(valores.totalFinanciado)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Investimento real</span>
+                      <span>{brl(valores.valorInvestidoReal)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              {showFluxoDetalhado && (
+                <div className="rounded-2xl border bg-white shadow-sm overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead className="bg-slate-100 text-slate-600 uppercase tracking-wide">
+                      <tr>
+                        <th className="px-3 py-2 text-left font-semibold">#</th>
+                        <th className="px-3 py-2 text-left font-semibold">Mês</th>
+                        <th className="px-3 py-2 text-left font-semibold">Tipo</th>
+                        <th className="px-3 py-2 text-right font-semibold">Valor</th>
+                        <th className="px-3 py-2 text-right font-semibold">Acumulado</th>
+                        <th className="px-3 py-2 text-right font-semibold">% do fluxo</th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {valores.schedule.map((p, i) => (
-                        <tr key={`${p.tipo}-${i}`} className="border-b last:border-0">
-                          <td className="p-2">{i + 1}</td>
-                          <td className="p-2">{p.data.toLocaleDateString("pt-BR")}</td>
-                          <td className="p-2">{p.tipo}</td>
-                          <td className="p-2 text-right">{brl(p.valor)}</td>
-                          <td className="p-2 text-right">{brl(p.acumulado)}</td>
-                          <td className="p-2 text-right">{p.percentual.toFixed(2)}%</td>
+                    <tbody className="divide-y divide-slate-100">
+                      {valores.schedule.map((item, index) => (
+                        <tr key={`${item.tipo}-${index}`} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/60"}>
+                          <td className="px-3 py-2">{index + 1}</td>
+                          <td className="px-3 py-2">{item.data.toLocaleDateString("pt-BR")}</td>
+                          <td className="px-3 py-2">{item.tipo}</td>
+                          <td className="px-3 py-2 text-right">{brl(item.valor)}</td>
+                          <td className="px-3 py-2 text-right">{brl(item.acumulado)}</td>
+                          <td className="px-3 py-2 text-right">{pct(item.percentual)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                ) : (
-                  <div className="p-4 text-sm text-gray-600 space-y-2">
-                    <p>
-                      Pagamento do cliente (sem financiamento): <strong>{brl(valores.totalFluxoSemFin)}</strong>
-                    </p>
-                    <p>
-                      Pagamento total (cliente + banco): <strong>{brl(valores.totalJaSomado)}</strong>
-                    </p>
-                    {valores.schedule.length > 0 && (
-                      <p className="text-xs text-gray-500">
-                        {valores.schedule.length} lançamentos cadastrados · período de {valores.schedule[0].data.toLocaleDateString(
-                          "pt-BR"
-                        )}
-                        {" "}
-                        a {valores.schedule[valores.schedule.length - 1].data.toLocaleDateString("pt-BR")}.
-                      </p>
-                    )}
-                    <p className="text-xs text-gray-500">
-                      Clique em "Ver fluxo mês a mês" para abrir a planilha completa com parcelas e percentuais.
-                    </p>
-                  </div>
-                )}
-              </div>
-              <p className="mt-2 text-[11px] text-gray-500">
-                Fórmulas: Valor total = SOMA(Entrada + Obra + Reforços + (Chaves à vista ou Pós-chaves)). Acumulado(i) =
-                Acumulado(i-1) + Valor(i). % do fluxo(i) = Acumulado(i) / Total do fluxo.
-              </p>
-            </section>
-
-            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
-              <h3 className="text-lg font-semibold text-slate-700">Cenário 1 — Revenda</h3>
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 text-[13px]">
-                <table className="w-full">
-                  <tbody>
-                    <TR label="Prazo (anos)" value={String(data.prazoObraAnos || 0)} />
-                    <TR label="Valorização anual" value={pct(data.apreciacao)} />
-                    <TR label="Valor hoje" value={brl(valores.total)} />
-                    <TR label="Valor final" value={brl(cenario1.valorFinal)} />
-                    <TR label="Lucro" value={brl(cenario1.lucro)} />
-                    <tr className="border-t-2 border-emerald-600">
-                      <td className="p-3 font-bold text-emerald-800">ROI</td>
-                      <td className="p-3 font-bold text-emerald-800">{pct(cenario1.roi)}</td>
-                    </tr>
-                    <tr className="bg-emerald-100">
-                      <td className="p-3 font-bold text-emerald-900">ROAS</td>
-                      <td className="p-3 font-bold text-emerald-900">{pct(cenario1.roas)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
-              <h3 className="text-lg font-semibold text-slate-700">Cenário 2 — Short Stay (5 anos)</h3>
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-[13px] space-y-3">
-                <div className="p-3 bg-white rounded border text-[12px] leading-6">
-                  <p className="font-semibold mb-1">Parâmetros</p>
-                  <ul className="space-y-1">
-                    <li>• ADR: {brl(cenario2.adrDiaria)}</li>
-                    <li>
-                      • Ocupação: {data.ocupacao}% ≈ {Math.round(((data.ocupacao || 0) * 30) / 100)} diárias/mês
-                    </li>
-                    <li>• Receita bruta: {brl(cenario2.receitaMensalBruta)}/mês</li>
-                    <li>• Custos: {data.custosOperacionais}%</li>
-                    <li>
-                      • <strong>Líquido: {brl(cenario2.aluguelLiquido)}/mês</strong>
-                    </li>
-                  </ul>
                 </div>
-                <table className="w-full">
-                  <tbody>
-                    <TR label="Renda em 5 anos" value={brl(cenario2.rendaAcumulada)} />
-                    <TR label="Valorização até entrega" value={brl(cenario2.patrimonioAcrescido)} />
-                    <TR label="Valor final" value={brl(cenario2.valorFinal)} />
-                    <tr className="border-t-2 bg-blue-200">
-                      <td className="p-3 font-bold">RETORNO TOTAL</td>
-                      <td className="p-3 font-bold">{brl(cenario2.retornoTotal)}</td>
-                    </tr>
-                    <tr className="bg-emerald-50">
-                      <td className="p-3 font-bold text-emerald-800">ROI</td>
-                      <td className="p-3 font-bold text-emerald-800">{pct(cenario2.roi)}</td>
-                    </tr>
-                    <tr className="bg-emerald-100">
-                      <td className="p-3 font-bold text-emerald-900">ROAS</td>
-                      <td className="p-3 font-bold text-emerald-900">{pct(cenario2.roas)}</td>
-                    </tr>
-                  </tbody>
-                </table>
+              )}
+              <div className="pt-4 border-t border-dashed border-slate-200 space-y-4">
+                <h3 className="text-lg font-semibold text-slate-700">Cenários de Retorno</h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-[13px] shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-emerald-900">Cenário 1 — Revenda</h4>
+                      <span className="text-xs text-emerald-700">Prazo: {data.prazoObraAnos || 0} anos</span>
+                    </div>
+                    <table className="w-full">
+                      <tbody>
+                        <TR label="Valorização anual" value={pct(data.apreciacao)} />
+                        <TR label="Valor hoje" value={brl(valores.total)} />
+                        <TR label="Valor final" value={brl(cenario1.valorFinal)} />
+                        <TR label="Lucro" value={brl(cenario1.lucro)} />
+                        <tr className="border-t-2 border-emerald-600">
+                          <td className="p-3 font-bold text-emerald-800">ROI</td>
+                          <td className="p-3 font-bold text-emerald-800">{pct(cenario1.roi)}</td>
+                        </tr>
+                        <tr className="bg-emerald-100">
+                          <td className="p-3 font-bold text-emerald-900">ROAS</td>
+                          <td className="p-3 font-bold text-emerald-900">{pct(cenario1.roas)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-[13px] shadow-sm space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-blue-900">Cenário 2 — Short Stay (5 anos)</h4>
+                      <span className="text-xs text-blue-700">Operação: 5 anos</span>
+                    </div>
+                    <div className="p-3 bg-white rounded-xl border text-[12px] leading-6">
+                      <p className="font-semibold mb-1">Parâmetros</p>
+                      <ul className="space-y-1">
+                        <li>• ADR: {brl(cenario2.adrDiaria)}</li>
+                        <li>
+                          • Ocupação: {data.ocupacao}% ≈ {Math.round(((data.ocupacao || 0) * 30) / 100)} diárias/mês
+                        </li>
+                        <li>• Receita bruta: {brl(cenario2.receitaMensalBruta)}/mês</li>
+                        <li>• Custos: {data.custosOperacionais}%</li>
+                        <li>
+                          • <strong>Líquido: {brl(cenario2.aluguelLiquido)}/mês</strong>
+                        </li>
+                      </ul>
+                    </div>
+                    <table className="w-full">
+                      <tbody>
+                        <TR label="Renda em 5 anos" value={brl(cenario2.rendaAcumulada)} />
+                        <TR label="Valorização até entrega" value={brl(cenario2.patrimonioAcrescido)} />
+                        <TR label="Valor final" value={brl(cenario2.valorFinal)} />
+                        <tr className="border-t-2 bg-blue-200">
+                          <td className="p-3 font-bold">RETORNO TOTAL</td>
+                          <td className="p-3 font-bold">{brl(cenario2.retornoTotal)}</td>
+                        </tr>
+                        <tr className="bg-emerald-50">
+                          <td className="p-3 font-bold text-emerald-800">ROI</td>
+                          <td className="p-3 font-bold text-emerald-800">{pct(cenario2.roi)}</td>
+                        </tr>
+                        <tr className="bg-emerald-100">
+                          <td className="p-3 font-bold text-emerald-900">ROAS</td>
+                          <td className="p-3 font-bold text-emerald-900">{pct(cenario2.roas)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              <div className="pt-4 border-t border-dashed border-slate-200 space-y-2 text-[11px] text-gray-500">
+                <p className="italic leading-5">
+                  * Estimativas baseadas em projeções de mercado. ROI = retorno sobre o valor total; ROAS = retorno sobre o
+                  investimento real.
+                </p>
+                <p className="leading-5">
+                  * Formas de pagamento sujeitas a atualização por <strong>CUB (período de obras)</strong> e <strong>IGP-M + 1%</strong>
+                  após a entrega das chaves.
+                </p>
+                <p className="leading-5">
+                  © {new Date().getFullYear()} Alvo BR — {data.company} · {data.phone} · {data.email}
+                </p>
               </div>
             </section>
 
-            <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-3">
-              <p className="text-[11px] text-gray-500 italic leading-5">
-                * Estimativas baseadas em projeções de mercado. ROI = retorno sobre o valor total; ROAS = retorno sobre o
-                investimento real.
-              </p>
-              <p className="text-[11px] text-gray-500 leading-5">
-                * Formas de pagamento sujeitas a atualização por <strong>CUB (período de obras)</strong> e <strong>IGP-M + 1%</strong>
-                após a entrega das chaves.
-              </p>
-              <p className="text-[11px] text-gray-500 leading-5">
-                © {new Date().getFullYear()} Alvo BR — {data.company} · {data.phone} · {data.email}
-              </p>
-            </section>
+            
+
+            
           </div>
         </main>
       )}
@@ -1273,14 +1314,14 @@ const formatDate = (value) => {
   return Number.isFinite(date.getTime()) ? date.toLocaleDateString("pt-BR") : "—";
 };
 
-function FluxoResumoCards({ items, columns = "grid grid-cols-1 sm:grid-cols-2 gap-3" }) {
+function FluxoResumoCards({ items, columns = "grid grid-cols-1 sm:grid-cols-2 gap-2" }) {
   if (!items || items.length === 0) return null;
   return (
     <div className={columns}>
       {items.map((item) => (
         <div
           key={item.key}
-          className={`rounded-lg border p-3 text-xs space-y-1 ${
+          className={`rounded-xl border p-3 text-xs space-y-1 shadow-sm transition ${
             item.destaque ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-slate-50 border-slate-200"
           }`}
         >
@@ -1302,11 +1343,11 @@ function FluxoResumoCards({ items, columns = "grid grid-cols-1 sm:grid-cols-2 ga
 
 function Card({ title, children }) {
   return (
-    <div className="bg-white rounded-2xl shadow-sm border overflow-hidden ring-1 ring-slate-200">
-      <div className="px-4 py-3 border-b bg-gradient-to-r from-slate-50 to-white">
-        <h4 className="font-semibold tracking-tight">{title}</h4>
+    <div className="bg-white/90 backdrop-blur rounded-3xl shadow-xl border border-white/60 overflow-hidden">
+      <div className="px-5 py-3 border-b border-white/60 bg-white/40">
+        <h4 className="font-semibold tracking-tight text-slate-800">{title}</h4>
       </div>
-      <div className="p-4 space-y-2">{children}</div>
+      <div className="p-5 space-y-3">{children}</div>
     </div>
   );
 }
