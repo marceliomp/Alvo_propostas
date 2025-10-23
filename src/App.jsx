@@ -78,6 +78,7 @@ const sample = {
   chavesPercent: 45,
   chavesForma: "financiamento",
   chavesPosParcelas: 0,
+  chavesAvistaParcelas: 1,
   balaoValor: 0,
   balaoQuantidade: 0,
   balaoFrequenciaMeses: 6,
@@ -132,6 +133,10 @@ export default function App() {
     const chavesPercent = Math.max(0, Number(data.chavesPercent || 0));
     const chavesTotal = (total * chavesPercent) / 100;
     const chavesFinanciado = data.chavesForma === "financiamento";
+    const chavesDiretasParcelas = data.chavesForma === "avista"
+      ? Math.max(1, Math.floor(Number(data.chavesAvistaParcelas || 1)))
+      : 0;
+    const chavesDiretasParcelaValor = chavesDiretasParcelas > 0 ? chavesTotal / chavesDiretasParcelas : chavesTotal;
 
     const qRef = Math.max(0, Math.floor(Number(data.balaoQuantidade || 0)));
     const vRef = Math.max(0, Number(data.balaoValor || 0));
@@ -187,11 +192,14 @@ export default function App() {
     }
 
     if (data.chavesForma === "avista" && chavesTotal > 0) {
-      schedule.push({
-        tipo: "Chaves (à vista)",
-        data: addMonths(baseDate, entradaParcelas + parcelasObra),
-        valor: chavesTotal,
-      });
+      const pcs = Math.max(1, chavesDiretasParcelas || 1);
+      for (let i = 0; i < pcs; i++) {
+        schedule.push({
+          tipo: pcs === 1 ? "Chaves (direto)" : `Chaves ${i + 1}/${pcs}`,
+          data: addMonths(baseDate, entradaParcelas + parcelasObra + i),
+          valor: chavesDiretasParcelaValor,
+        });
+      }
     }
 
     if (data.chavesForma === "posConstrutora" && chavesTotal > 0) {
@@ -224,6 +232,8 @@ export default function App() {
       duranteObraParcelas: parcelasObra,
       chavesTotal,
       chavesFinanciado,
+      chavesDiretasParcelas,
+      chavesDiretasParcelaValor,
       reforcosTotal,
       valorInvestidoReal,
       saldoACompor,
@@ -343,7 +353,14 @@ export default function App() {
     node.style.width = `${exportWidthPx}px`;
     node.style.maxWidth = `${exportWidthPx}px`;
 
-    const canvas = await window.html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+    const canvas = await window.html2canvas(node, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      imageTimeout: 0,
+      scrollY: -window.scrollY,
+      windowWidth: node.scrollWidth,
+    });
 
     const imgWidth = pageWidth;
     const pageHeightPx = (canvas.width * pageHeight) / pageWidth;
@@ -395,7 +412,13 @@ export default function App() {
     { label: "Durante a obra", valor: valores.totalObra },
     { label: "Reforços", valor: valores.totalReforcos },
     data.chavesForma === "avista"
-      ? { label: "Chaves (à vista)", valor: valores.chavesTotal }
+      ? {
+          label:
+            valores.chavesDiretasParcelas && valores.chavesDiretasParcelas > 1
+              ? `Chaves (direto) em ${valores.chavesDiretasParcelas}x`
+              : "Chaves (direto)",
+          valor: valores.chavesTotal,
+        }
       : data.chavesForma === "posConstrutora"
       ? { label: "Pós-chaves", valor: valores.totalPosChaves }
       : null,
@@ -635,7 +658,7 @@ export default function App() {
                       onChange={(e) => setData((d) => ({ ...d, chavesForma: e.target.value }))}
                     >
                       <option value="financiamento">Financiamento bancário</option>
-                      <option value="avista">À vista na entrega</option>
+                      <option value="avista">Direto com a construtora (à vista ou parcelado)</option>
                       <option value="posConstrutora">Parcelado (pós-chaves)</option>
                     </select>
                   </label>
@@ -644,6 +667,13 @@ export default function App() {
                     value={data.chavesPercent ?? ""}
                     onChange={handlePercent("chavesPercent")}
                   />
+                  {data.chavesForma === "avista" && (
+                    <Input
+                      label="Parcelas das chaves"
+                      value={data.chavesAvistaParcelas ?? ""}
+                      onChange={handleNumeric("chavesAvistaParcelas")}
+                    />
+                  )}
                   {data.chavesForma === "posConstrutora" && (
                     <Input
                       label="Parcelas pós-chaves"
@@ -667,6 +697,12 @@ export default function App() {
                     <div>
                       Pós-chaves em {Math.max(1, Number(data.chavesPosParcelas || 0))}x de {" "}
                       <strong>{brl(valores.chavesTotal / Math.max(1, Number(data.chavesPosParcelas || 1)))}</strong>
+                    </div>
+                  )}
+                  {data.chavesForma === "avista" && valores.chavesDiretasParcelas > 1 && (
+                    <div>
+                      Chaves em {valores.chavesDiretasParcelas}x de {" "}
+                      <strong>{brl(valores.chavesDiretasParcelaValor)}</strong>
                     </div>
                   )}
                 </div>
@@ -722,6 +758,11 @@ export default function App() {
                   ) : data.chavesForma === "posConstrutora" ? (
                     <>
                       <strong>{brl(valores.chavesTotal)}</strong> em {Math.max(1, Number(data.chavesPosParcelas || 0))}x
+                    </>
+                  ) : valores.chavesDiretasParcelas > 1 ? (
+                    <>
+                      <strong>{brl(valores.chavesTotal)}</strong> em {valores.chavesDiretasParcelas}x de {" "}
+                      <strong>{brl(valores.chavesDiretasParcelaValor)}</strong>
                     </>
                   ) : (
                     <>
@@ -902,6 +943,14 @@ export default function App() {
                       <strong>{brl(valores.totalPosChaves)}</strong>
                     </div>
                   )}
+                  {data.chavesForma === "avista" && valores.chavesDiretasParcelas > 1 && (
+                    <div className="flex justify-between">
+                      <span>Chaves em parcelas</span>
+                      <strong>
+                        {valores.chavesDiretasParcelas}x de {brl(valores.chavesDiretasParcelaValor)}
+                      </strong>
+                    </div>
+                  )}
                   {valores.totalFinanciado > 0 && (
                     <div className="flex justify-between">
                       <span>Financiado (banco)</span>
@@ -951,9 +1000,19 @@ export default function App() {
                     {imagensGaleria.map((img, index) => (
                       <figure
                         key={`${img.name}-${index}`}
-                        className="border rounded-2xl overflow-hidden bg-white shadow-sm"
+                        className="border rounded-2xl bg-white shadow-sm overflow-hidden"
+                        style={{ breakInside: "avoid", pageBreakInside: "avoid" }}
                       >
-                        <img src={img.dataUrl} alt={img.name || `Imagem ${index + 1}`} className="w-full h-56 object-cover" />
+                        <div
+                          className="w-full bg-slate-100 flex items-center justify-center"
+                          style={{ minHeight: "200px" }}
+                        >
+                          <img
+                            src={img.dataUrl}
+                            alt={img.name || `Imagem ${index + 1}`}
+                            className="max-h-[420px] w-full object-contain"
+                          />
+                        </div>
                         <figcaption className="px-3 py-2 text-[11px] text-gray-500 truncate">
                           {img.name || `Imagem ${index + 1}`}
                         </figcaption>
@@ -1255,7 +1314,9 @@ function FileInput({ label, file, accept, helper, onFileChange }) {
           </div>
           {file.type?.startsWith("image/") ? (
             <div className="border rounded-xl overflow-hidden bg-white shadow-sm">
-              <img src={file.dataUrl} alt={file.name} className="w-full h-40 object-cover" />
+              <div className="bg-slate-100 flex items-center justify-center" style={{ minHeight: "140px" }}>
+                <img src={file.dataUrl} alt={file.name} className="max-h-40 w-full object-contain" />
+              </div>
             </div>
           ) : (
             <p className="text-[11px] text-gray-500">Arquivo anexado pronto para o PDF.</p>
