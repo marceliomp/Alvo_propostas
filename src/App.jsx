@@ -1,6 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import alvoLogo from "./assets/alvo-logo.svg";
 
+const palette = {
+  petrolBlue: "#003B46",
+  petrolBlueDark: "#021F26",
+  petrolGreen: "#0E7C7B",
+  petrolGreenLight: "#139C95",
+  black: "#0B0D0E",
+  white: "#FFFFFF",
+};
+
 /********************
  * Utils
  ********************/
@@ -929,33 +938,33 @@ export default function App() {
   ].filter(Boolean);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100/80">
-      <header className="sticky top-0 z-40 backdrop-blur border-b border-white/10 bg-slate-900/70">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3 text-white">
+    <div className="min-h-screen theme-wrapper">
+      <header className="sticky top-0 z-40 theme-header">
+        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
           <AlvoLogo size={36} />
           <div className="flex-1">
-            <h1 className="text-xl font-semibold tracking-tight">Alvo Propostas</h1>
-            <p className="text-xs text-slate-200/80">
+            <h1 className="text-xl font-semibold tracking-tight text-white">Alvo Propostas</h1>
+            <p className="text-xs text-white/80">
               Página {step === "setup" ? "de Edição" : "da Proposta"} · PDF multipágina A4
             </p>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={fillExample}
-              className="px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-sm font-medium text-white hover:bg-white/20 transition"
+              className="btn-secondary"
             >
               Exemplo
             </button>
             <button
               onClick={clearAll}
-              className="px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-sm font-medium text-white hover:bg-white/20 transition"
+              className="btn-secondary"
             >
               Limpar
             </button>
             {step === "setup" && (
               <button
                 onClick={recalc}
-                className="px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-sm font-medium text-white hover:bg-white/20 transition"
+                className="btn-secondary"
               >
                 Recalcular
               </button>
@@ -965,7 +974,7 @@ export default function App() {
                 <select
                   value={pdfOrientation}
                   onChange={(event) => setPdfOrientation(event.target.value)}
-                  className="px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-sm text-white/80 hover:bg-white/20 transition"
+                  className="select-secondary"
                 >
                   <option value="portrait" className="text-slate-900">
                     PDF em retrato (A4)
@@ -976,13 +985,13 @@ export default function App() {
                 </select>
                 <button
                   onClick={() => setStep("setup")}
-                  className="px-3 py-2 rounded-2xl bg-white/10 border border-white/20 text-sm font-medium text-white hover:bg-white/20 transition"
+                  className="btn-secondary"
                 >
                   Voltar ao Setup
                 </button>
                 <button
                   onClick={savePDF}
-                  className="px-3 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 transition"
+                  className="btn-primary"
                 >
                   Baixar PDF
                 </button>
@@ -990,7 +999,7 @@ export default function App() {
             ) : (
               <button
                 onClick={gerarProposta}
-                className="px-3 py-2 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold shadow-lg shadow-emerald-500/30 transition"
+                className="btn-primary"
               >
                 Gerar Proposta
               </button>
@@ -1000,7 +1009,7 @@ export default function App() {
       </header>
 
       {step === "setup" ? (
-        <main className="mx-auto max-w-7xl p-6 space-y-6 text-slate-900">
+        <main className="mx-auto max-w-7xl p-6 space-y-6 text-[color:var(--petrol-black)]">
           <Card title="1) Empresa">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <Input label="Empresa" value={data.company || ""} onChange={handle("company")} />
@@ -1535,7 +1544,7 @@ export default function App() {
           </Card>
         </main>
       ) : (
-        <main className="mx-auto max-w-7xl p-6 text-slate-900">
+        <main className="mx-auto max-w-7xl p-6 text-[color:var(--petrol-black)]">
           <div ref={resultRef} className="paper mx-auto space-y-8">
             <section className="page bg-white/95 border border-slate-200 rounded-3xl shadow-xl p-10 space-y-6">
               <div className="flex flex-wrap items-start gap-6">
@@ -1912,20 +1921,167 @@ export default function App() {
       )}
 
       <style>{`
+        :root {
+          --petrol-blue: ${palette.petrolBlue};
+          --petrol-blue-dark: ${palette.petrolBlueDark};
+          --petrol-green: ${palette.petrolGreen};
+          --petrol-green-light: ${palette.petrolGreenLight};
+          --petrol-black: ${palette.black};
+          --petrol-white: ${palette.white};
+        }
+        .theme-wrapper {
+          background: radial-gradient(circle at top left, rgba(0, 124, 123, 0.18), transparent 55%), linear-gradient(135deg, var(--petrol-blue-dark), var(--petrol-blue));
+          color: var(--petrol-white);
+        }
+        .theme-header {
+          backdrop-filter: blur(18px);
+          background: linear-gradient(90deg, rgba(2, 31, 38, 0.9), rgba(0, 59, 70, 0.75));
+          border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .btn-secondary {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.375rem;
+          padding: 0.5rem 0.85rem;
+          border-radius: 9999px;
+          font-size: 0.8125rem;
+          font-weight: 500;
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          transition: all 0.2s ease;
+        }
+        .btn-secondary:hover {
+          background: rgba(255, 255, 255, 0.16);
+        }
+        .btn-primary {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.375rem;
+          padding: 0.55rem 1rem;
+          border-radius: 9999px;
+          font-size: 0.875rem;
+          font-weight: 600;
+          color: var(--petrol-white);
+          background: linear-gradient(135deg, var(--petrol-green), var(--petrol-green-light));
+          box-shadow: 0 18px 38px rgba(14, 124, 123, 0.32);
+          border: 1px solid rgba(14, 124, 123, 0.65);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .btn-primary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 22px 42px rgba(14, 124, 123, 0.42);
+        }
+        .select-secondary {
+          padding: 0.45rem 0.9rem;
+          border-radius: 9999px;
+          font-size: 0.8125rem;
+          font-weight: 500;
+          color: #ffffff;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          backdrop-filter: blur(14px);
+          transition: all 0.2s ease;
+        }
+        .select-secondary:focus {
+          outline: none;
+          border-color: rgba(255, 255, 255, 0.45);
+          box-shadow: 0 0 0 2px rgba(14, 124, 123, 0.35);
+        }
+        .select-secondary option {
+          color: var(--petrol-black);
+        }
+        .theme-card {
+          background: rgba(255, 255, 255, 0.94);
+          border: 1px solid rgba(0, 59, 70, 0.14);
+          border-radius: 1.75rem;
+          box-shadow: 0 26px 60px rgba(2, 31, 38, 0.28);
+          backdrop-filter: blur(16px);
+          overflow: hidden;
+        }
+        .theme-card__header {
+          padding: 0.8rem 1.4rem;
+          border-bottom: 1px solid rgba(0, 59, 70, 0.12);
+          background: linear-gradient(120deg, rgba(0, 59, 70, 0.08), rgba(14, 124, 123, 0.08));
+        }
+        .theme-mini-card {
+          border-radius: 0.95rem;
+          border: 1px solid rgba(0, 59, 70, 0.15);
+          background: rgba(255, 255, 255, 0.9);
+          box-shadow: 0 20px 30px rgba(2, 31, 38, 0.1);
+          padding: 0.9rem;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .theme-mini-card--highlight {
+          background: linear-gradient(135deg, rgba(14, 124, 123, 0.15), rgba(0, 59, 70, 0.08));
+          border-color: rgba(14, 124, 123, 0.45);
+        }
+        .theme-mini-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 26px 45px rgba(2, 31, 38, 0.18);
+        }
         .paper { width: 100%; max-width: 1200px; }
         .page { page-break-inside: avoid; }
         .page-break { page-break-before: always; margin-top: 8px; }
         .paper img { max-width: 100%; height: auto; }
         .paper * { line-height: 1.45; word-break: break-word; }
+        .text-slate-700, .text-slate-800, .text-slate-900 {
+          color: var(--petrol-black) !important;
+        }
+        .text-slate-200\/80 { color: rgba(255, 255, 255, 0.8) !important; }
+        .text-gray-600 { color: rgba(0, 59, 70, 0.6) !important; }
+        .text-gray-500 { color: rgba(0, 59, 70, 0.55) !important; }
+        .text-gray-400 { color: rgba(0, 59, 70, 0.45) !important; }
+        .border-slate-200, .border-slate-300 {
+          border-color: rgba(0, 59, 70, 0.2) !important;
+        }
+        .border-gray-200, .border-gray-300 {
+          border-color: rgba(0, 59, 70, 0.16) !important;
+        }
+        .bg-slate-50 { background-color: rgba(0, 59, 70, 0.06) !important; }
+        .bg-slate-100 { background-color: rgba(0, 59, 70, 0.1) !important; }
+        .bg-white\/95 { background-color: rgba(255, 255, 255, 0.95) !important; }
+        .text-emerald-700,
+        .text-emerald-800,
+        .text-emerald-900,
+        .hover\:text-emerald-700:hover,
+        .text-emerald-700\/80 {
+          color: var(--petrol-green) !important;
+        }
+        .text-emerald-700\/80 { color: rgba(14, 124, 123, 0.8) !important; }
+        .bg-emerald-50 { background-color: rgba(14, 124, 123, 0.12) !important; }
+        .bg-emerald-100 { background-color: rgba(14, 124, 123, 0.2) !important; }
+        .bg-blue-50 { background-color: rgba(0, 59, 70, 0.12) !important; }
+        .bg-blue-100 { background-color: rgba(0, 59, 70, 0.18) !important; }
+        .bg-blue-200 { background-color: rgba(0, 59, 70, 0.26) !important; }
+        .border-emerald-200, .border-emerald-300, .border-emerald-600 {
+          border-color: rgba(14, 124, 123, 0.45) !important;
+        }
+        .hover\:bg-emerald-100:hover { background-color: rgba(14, 124, 123, 0.25) !important; }
+        .hover\:border-emerald-200:hover { border-color: rgba(14, 124, 123, 0.45) !important; }
+        .focus\:ring-emerald-500:focus, .focus\:ring-emerald-100:focus {
+          --tw-ring-color: rgba(14, 124, 123, 0.35) !important;
+        }
+        .focus\:border-emerald-300:focus { border-color: rgba(14, 124, 123, 0.55) !important; }
+        .file\:bg-emerald-50::file-selector-button {
+          background-color: rgba(14, 124, 123, 0.12) !important;
+          color: var(--petrol-green) !important;
+        }
+        .file\:text-emerald-700::file-selector-button {
+          color: var(--petrol-green) !important;
+        }
+        .text-emerald-700.font-medium:hover { color: var(--petrol-green) !important; }
         @media print {
           @page { size: A4 ${pdfOrientation === "landscape" ? "landscape" : "portrait"}; margin: 14mm; }
           .sticky { display: none !important; }
           body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-          .bg-emerald-50 { background-color: #ecfdf5 !important; }
-          .bg-emerald-100 { background-color: #d1fae5 !important; }
-          .bg-blue-50 { background-color: #eff6ff !important; }
-          .bg-blue-100 { background-color: #dbeafe !important; }
-          .bg-blue-200 { background-color: #bfdbfe !important; }
+          .bg-emerald-50 { background-color: rgba(14, 124, 123, 0.12) !important; }
+          .bg-emerald-100 { background-color: rgba(14, 124, 123, 0.2) !important; }
+          .bg-blue-50 { background-color: rgba(0, 59, 70, 0.12) !important; }
+          .bg-blue-100 { background-color: rgba(0, 59, 70, 0.18) !important; }
+          .bg-blue-200 { background-color: rgba(0, 59, 70, 0.26) !important; }
         }
       `}</style>
     </div>
@@ -1948,17 +2104,21 @@ function FluxoResumoCards({ items, columns = "grid grid-cols-1 sm:grid-cols-2 ga
       {items.map((item) => (
         <div
           key={item.key}
-          className={`rounded-xl border p-3 text-xs space-y-1 shadow-sm transition ${
-            item.destaque ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-slate-50 border-slate-200"
-          }`}
+          className={`theme-mini-card ${item.destaque ? "theme-mini-card--highlight" : ""}`}
         >
           <div className="text-[11px] uppercase tracking-wide font-semibold">{item.label}</div>
           <div className="text-base font-semibold">{brl(item.valor)}</div>
-          <div className={`text-[11px] ${item.destaque ? "text-emerald-700" : "text-gray-600"}`}>
+          <div
+            className="text-[11px]"
+            style={{ color: item.destaque ? "var(--petrol-green)" : "rgba(0, 59, 70, 0.65)" }}
+          >
             {pct(item.percentual)} {item.contexto ? `do ${item.contexto}` : "do total"}
           </div>
           {item.detalhe ? (
-            <div className={`text-[11px] ${item.destaque ? "text-emerald-700/80" : "text-gray-500"}`}>
+            <div
+              className="text-[11px]"
+              style={{ color: item.destaque ? "rgba(14, 124, 123, 0.85)" : "rgba(0, 59, 70, 0.55)" }}
+            >
               {item.detalhe}
             </div>
           ) : null}
@@ -1970,9 +2130,9 @@ function FluxoResumoCards({ items, columns = "grid grid-cols-1 sm:grid-cols-2 ga
 
 function Card({ title, children }) {
   return (
-    <div className="bg-white/90 backdrop-blur rounded-3xl shadow-xl border border-white/60 overflow-hidden">
-      <div className="px-5 py-3 border-b border-white/60 bg-white/40">
-        <h4 className="font-semibold tracking-tight text-slate-800">{title}</h4>
+    <div className="theme-card">
+      <div className="theme-card__header">
+        <h4 className="font-semibold tracking-tight text-[color:var(--petrol-blue)]">{title}</h4>
       </div>
       <div className="p-5 space-y-3">{children}</div>
     </div>
@@ -2029,7 +2189,7 @@ function Input({ label, value, onChange, placeholder, currency = false }) {
     <label className="block">
       <div className="text-xs text-gray-600 mb-1">{label}</div>
       <input
-        className="w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
+        className="w-full px-3 py-2 rounded-xl border border-[rgba(0,59,70,0.2)] bg-white text-[color:var(--petrol-black)] focus:outline-none focus:ring-2 focus:ring-[rgba(14,124,123,0.35)] focus:border-[rgba(14,124,123,0.55)]"
         value={displayValue}
         onChange={handleChangeInternal}
         placeholder={placeholder}
@@ -2109,9 +2269,9 @@ function DataRow({ k, v }) {
 
 function KPI({ title, value, highlight, subValue }) {
   return (
-    <div className={`rounded-xl border p-3 ${highlight ? "bg-emerald-50 border-emerald-200" : "bg-white"}`}>
+    <div className={`theme-mini-card ${highlight ? "theme-mini-card--highlight" : ""}`}>
       <div className="text-xs text-gray-600 mb-1">{title}</div>
-      <div className="text-lg font-bold">{value}</div>
+      <div className="text-lg font-bold text-[color:var(--petrol-blue)]">{value}</div>
       {subValue && <div className="text-[11px] text-gray-500 mt-1">{subValue}</div>}
     </div>
   );
