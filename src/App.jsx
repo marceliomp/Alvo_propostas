@@ -41,7 +41,7 @@ const AlvoLogo = ({ size = 48, className = "" }) => {
     <img
       src={ALVO_LOGO_DATA_URL}
       className={classes}
-      style={{ height: size, width: size, objectFit: "contain", display: "inline-block" }}
+      style={{ height: size, width: "auto", maxWidth: "100%", objectFit: "contain", display: "inline-block" }}
       alt="Alvo BR"
       loading="lazy"
     />
@@ -177,23 +177,7 @@ export default function App() {
   const [showFluxoDetalhado, setShowFluxoDetalhado] = useState(false);
   const [pdfOrientation, setPdfOrientation] = useState("landscape");
   const resultRef = useRef(null);
-
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const base = (import.meta && import.meta.env && import.meta.env.BASE_URL) || "/";
-    const href = `${base.replace(/\/$/, "")}/favicon.png`;
-    const existing = document.querySelector("link[rel='icon']");
-    const link = existing || document.createElement("link");
-    link.rel = "icon";
-    link.type = "image/png";
-    link.href = href;
-    if (!existing) {
-      document.head.appendChild(link);
-    }
-    return () => {
-      link.href = href;
-    };
-  }, []);
+  // The favicon is embedded directly in index.html via a data URL, so no runtime override is required here.
 
   useEffect(() => {
     setData((d) => {
