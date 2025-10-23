@@ -104,11 +104,6 @@ const sample = {
   ocupacao: 70,
   custosOperacionais: 30,
   validade: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
-  arquivoOriginal: null,
-  imagem1: null,
-  imagem2: null,
-  imagem3: null,
-  imagem4: null,
   chavesExtraValor: 0,
   chavesExtraQuando: "na_entrega",
   comparativos: [],
@@ -409,8 +404,6 @@ export default function App() {
   };
 
   const recalc = () => setData((d) => ({ ...d }));
-  const setFile = (k) => (file) => setData((d) => ({ ...d, [k]: file }));
-
   const savePDF = async () => {
     if (!resultRef.current) return;
     await ensurePdfLibs();
@@ -453,7 +446,7 @@ export default function App() {
       const offsetY = (pageHeight - renderHeight) / 2;
 
       if (index > 0) {
-        pdf.addPage(undefined, orientation);
+        pdf.addPage("a4", orientation);
       }
       pdf.addImage(imgData, "JPEG", offsetX, offsetY, renderWidth, renderHeight);
     }
@@ -472,7 +465,6 @@ export default function App() {
     });
   const clearAll = () => setData({ comparativos: [] });
 
-  const imagensGaleria = [data.imagem1, data.imagem2, data.imagem3, data.imagem4].filter(Boolean);
   const comparativosForm = Array.isArray(data.comparativos) ? data.comparativos : [];
 
   const addComparativo = () =>
@@ -1054,7 +1046,7 @@ export default function App() {
                     </div>
                   )}
                   <div>
-                    Cobertura total: <strong>{brl(totalFluxoGeral)}</strong>
+                    Pagamento total: <strong>{brl(totalFluxoGeral)}</strong>
                   </div>
                 </div>
               </div>
@@ -1062,36 +1054,7 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="5) Materiais e mídias">
-            <div className="space-y-4">
-              <FileInput
-                label="Arquivo original do projeto"
-                file={data.arquivoOriginal}
-                accept="application/pdf,image/*"
-                helper="Anexe o PDF ou imagem-base entregue pela construtora para manter a proposta completa."
-                onFileChange={setFile("arquivoOriginal")}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { key: "imagem1", label: "Imagem 1" },
-                  { key: "imagem2", label: "Imagem 2" },
-                  { key: "imagem3", label: "Imagem 3" },
-                  { key: "imagem4", label: "Imagem 4" },
-                ].map((item) => (
-                  <FileInput
-                    key={item.key}
-                    label={`${item.label} do empreendimento`}
-                    file={data[item.key]}
-                    accept="image/*"
-                    helper="Use imagens em alta resolução para o PDF."
-                    onFileChange={setFile(item.key)}
-                  />
-                ))}
-              </div>
-            </div>
-          </Card>
-
-          <Card title="6) Comparativos de investimento">
+          <Card title="5) Comparativos de investimento">
             <p className="text-sm text-slate-500">
               Compare este fluxo com alternativas como CDI, renda fixa ou fundos, usando a mesma agenda de aportes do cliente.
             </p>
@@ -1250,33 +1213,97 @@ export default function App() {
             </section>
 
             <section className="page bg-white/95 border border-slate-200 rounded-3xl shadow-xl p-10 space-y-5">
-              <h3 className="text-lg font-semibold text-slate-700">Condições Comerciais</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="rounded-2xl border bg-white p-4 space-y-3 text-sm shadow-sm">
-                  <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
-                    Resumo do fluxo de pagamento
-                  </h4>
-                  <FluxoResumoCards items={resumoFluxo} />
-                  <div className="p-3 rounded-xl bg-slate-50 text-xs text-gray-600 space-y-1">
-                    <div className="flex justify-between">
-                      <span>Cliente</span>
-                      <span className="font-semibold">{brl(totalFluxoCliente)}</span>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold text-slate-700">Condições comerciais e fluxo de pagamento</h3>
+                <button
+                  onClick={() => setShowFluxoDetalhado((prev) => !prev)}
+                  className="px-3 py-1.5 rounded-full border text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition"
+                  type="button"
+                  aria-expanded={showFluxoDetalhado}
+                >
+                  {showFluxoDetalhado ? "Ocultar parcelas" : "Ver fluxo mês a mês"}
+                </button>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] gap-5">
+                <div className="space-y-4">
+                  <div className="rounded-2xl border bg-white p-4 space-y-3 text-sm shadow-sm">
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                      Resumo do fluxo de pagamento
+                    </h4>
+                    <FluxoResumoCards items={resumoFluxo} columns="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2" />
+                    <div className="p-3 rounded-xl bg-slate-50 text-xs text-gray-600 space-y-1">
+                      <div className="flex justify-between">
+                        <span>Cliente</span>
+                        <span className="font-semibold">{brl(totalFluxoCliente)}</span>
+                      </div>
+                      {valores.totalShortStay > 0 && (
+                        <div className="flex justify-between">
+                          <span>Short stay (pós-obra)</span>
+                          <span className="font-semibold">{brl(valores.totalShortStay)}</span>
+                        </div>
+                      )}
+                      {valores.totalFinanciado > 0 && (
+                        <div className="flex justify-between">
+                          <span>Banco</span>
+                          <span className="font-semibold">{brl(valores.totalFinanciado)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span>Pagamento total</span>
+                        <span className="font-semibold">{brl(totalFluxoGeral)}</span>
+                      </div>
                     </div>
-                    {valores.totalShortStay > 0 && (
-                      <div className="flex justify-between">
-                        <span>Short stay (pós-obra)</span>
-                        <span className="font-semibold">{brl(valores.totalShortStay)}</span>
+                  </div>
+                  <div className="rounded-2xl border bg-white p-4 shadow-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                      <div className="space-y-1">
+                        <div className="flex justify-between">
+                          <span>Pagamento do cliente</span>
+                          <strong>{brl(valores.totalCliente)}</strong>
+                        </div>
+                        {valores.totalShortStay > 0 && (
+                          <div className="flex justify-between">
+                            <span>Short stay (pós-obra)</span>
+                            <strong>{brl(valores.totalShortStay)}</strong>
+                          </div>
+                        )}
+                        {valores.totalFinanciado > 0 && (
+                          <div className="flex justify-between">
+                            <span>Financiado (banco)</span>
+                            <strong>{brl(valores.totalFinanciado)}</strong>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span>Saldo em aberto</span>
+                          <strong>{brl(valores.saldoACompor)}</strong>
+                        </div>
                       </div>
-                    )}
-                    {valores.totalFinanciado > 0 && (
-                      <div className="flex justify-between">
-                        <span>Banco</span>
-                        <span className="font-semibold">{brl(valores.totalFinanciado)}</span>
+                      <div className="space-y-1">
+                        <div className="flex justify-between">
+                          <span>Valor do imóvel</span>
+                          <strong>{brl(valores.total)}</strong>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Pagamento total</span>
+                          <strong>{brl(valores.totalJaSomado)}</strong>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-500">
+                          <span>Cliente</span>
+                          <span>{brl(valores.totalCliente)}</span>
+                        </div>
+                        {valores.totalShortStay > 0 && (
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>Short stay</span>
+                            <span>{brl(valores.totalShortStay)}</span>
+                          </div>
+                        )}
+                        {valores.totalFinanciado > 0 && (
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>Banco</span>
+                            <span>{brl(valores.totalFinanciado)}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span>Cobertura total</span>
-                      <span className="font-semibold">{brl(totalFluxoGeral)}</span>
                     </div>
                   </div>
                 </div>
@@ -1316,123 +1343,6 @@ export default function App() {
                       {valores.totalShortStay > 0 ? <span> · Short stay {brl(valores.totalShortStay)}</span> : null}
                       {valores.totalFinanciado > 0 ? <span> · Banco {brl(valores.totalFinanciado)}</span> : null}
                     </span>
-                  </div>
-                </div>
-              </div>
-              {(data.arquivoOriginal || imagensGaleria.length > 0) && (
-                <div className="pt-4 border-t border-dashed border-slate-200 space-y-4">
-                  <h4 className="text-sm font-semibold text-slate-700">Materiais do Empreendimento</h4>
-                  {data.arquivoOriginal && (
-                    <div className="rounded-2xl border bg-slate-50 p-4 flex flex-wrap items-center justify-between gap-3 text-sm shadow-sm">
-                      <div>
-                        <p className="font-semibold text-slate-700">Arquivo original</p>
-                        <p className="text-xs text-gray-500">{data.arquivoOriginal.name}</p>
-                      </div>
-                      <a
-                        href={data.arquivoOriginal.dataUrl}
-                        download={data.arquivoOriginal.name || "arquivo-original"}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-4 py-2 rounded-full border bg-white text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition"
-                      >
-                        Abrir arquivo
-                      </a>
-                    </div>
-                  )}
-                  {imagensGaleria.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {imagensGaleria.map((img, index) => (
-                        <figure
-                          key={`${img.name}-${index}`}
-                          className="border rounded-2xl overflow-hidden bg-white shadow-sm"
-                        >
-                          <img
-                            src={img.dataUrl}
-                            alt={img.name || `Imagem ${index + 1}`}
-                            className="w-full h-52 object-contain bg-slate-900/5"
-                          />
-                          <figcaption className="px-3 py-2 text-[11px] text-gray-500 truncate">
-                            {img.name || `Imagem ${index + 1}`}
-                          </figcaption>
-                        </figure>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-              <p className="text-[11px] text-gray-500">
-                Fórmulas: Valor total = SOMA(Entrada + Obra + Reforços + (Chaves à vista ou Pós-chaves)). Acumulado(i) =
-                Acumulado(i-1) + Valor(i). % do fluxo(i) = Acumulado(i) / Total do fluxo.
-              </p>
-            </section>
-            
-
-            <section className="page bg-white/95 border border-slate-200 rounded-3xl shadow-xl p-10 space-y-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold text-slate-700">Fluxo de Pagamento</h3>
-                <button
-                  onClick={() => setShowFluxoDetalhado((prev) => !prev)}
-                  className="px-3 py-1.5 rounded-full border text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition"
-                  type="button"
-                  aria-expanded={showFluxoDetalhado}
-                >
-                  {showFluxoDetalhado ? "Ocultar parcelas" : "Ver fluxo mês a mês"}
-                </button>
-              </div>
-              <div className="rounded-2xl border bg-white p-4 shadow-sm space-y-3">
-                <FluxoResumoCards items={resumoFluxo} columns="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                  <div className="space-y-1">
-                    <div className="flex justify-between">
-                      <span>Pagamento do cliente</span>
-                      <strong>{brl(valores.totalCliente)}</strong>
-                    </div>
-                    {valores.totalShortStay > 0 && (
-                      <div className="flex justify-between">
-                        <span>Short stay (pós-obra)</span>
-                        <strong>{brl(valores.totalShortStay)}</strong>
-                      </div>
-                    )}
-                    {valores.totalFinanciado > 0 && (
-                      <div className="flex justify-between">
-                        <span>Financiado (banco)</span>
-                        <strong>{brl(valores.totalFinanciado)}</strong>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span>Cobertura total</span>
-                      <strong>{brl(totalFluxoGeral)}</strong>
-                    </div>
-                    <div className="flex justify-between text-emerald-700 font-semibold">
-                      <span>{saldoTitle}</span>
-                      <span>{brl(valores.saldoACompor)}</span>
-                    </div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex justify-between">
-                      <span>Valor do imóvel</span>
-                      <strong>{brl(valores.total)}</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Pagamento total</span>
-                      <strong>{brl(valores.totalJaSomado)}</strong>
-                    </div>
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>Cliente</span>
-                      <span>{brl(valores.totalCliente)}</span>
-                    </div>
-                    {valores.totalShortStay > 0 && (
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>Short stay</span>
-                        <span>{brl(valores.totalShortStay)}</span>
-                      </div>
-                    )}
-                    {valores.totalFinanciado > 0 && (
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>Banco</span>
-                        <span>{brl(valores.totalFinanciado)}</span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1511,6 +1421,10 @@ export default function App() {
                   </table>
                 </div>
               )}
+              <p className="text-[11px] text-gray-500">
+                Fórmulas: Valor total = SOMA(Entrada + Obra + Reforços + (Chaves à vista ou Pós-chaves)). Acumulado(i) =
+                Acumulado(i-1) + Valor(i). % do fluxo(i) = Acumulado(i) / Total do fluxo.
+              </p>
               <div className="pt-4 border-t border-dashed border-slate-200 space-y-4">
                 <h3 className="text-lg font-semibold text-slate-700">Cenários de Retorno</h3>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -1591,6 +1505,7 @@ export default function App() {
                 </p>
               </div>
             </section>
+
 
             
 
@@ -1877,63 +1792,6 @@ function Input({ label, value, onChange, placeholder, currency = false }) {
         inputMode={currency ? "decimal" : undefined}
       />
     </label>
-  );
-}
-
-function FileInput({ label, file, accept, helper, onFileChange }) {
-  const handleChange = (event) => {
-    const selected = event.target.files?.[0];
-    if (!selected) {
-      onFileChange(null);
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      onFileChange({ name: selected.name, type: selected.type, dataUrl: reader.result });
-    };
-    reader.onerror = () => onFileChange(null);
-    reader.readAsDataURL(selected);
-    event.target.value = "";
-  };
-
-  return (
-    <div className="space-y-2">
-      <label className="block">
-        <div className="text-xs text-gray-600 mb-1">{label}</div>
-        <input
-          type="file"
-          accept={accept}
-          onChange={handleChange}
-          className="block w-full text-xs text-gray-600 file:mr-3 file:rounded-full file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-emerald-700 file:font-medium"
-        />
-      </label>
-      {helper && <p className="text-[11px] text-gray-500">{helper}</p>}
-      {file ? (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between rounded-xl border bg-white px-3 py-2 text-xs text-gray-600">
-            <span className="truncate pr-3">{file.name}</span>
-            <button
-              type="button"
-              onClick={() => onFileChange(null)}
-              className="text-emerald-700 font-medium hover:underline"
-            >
-              Remover
-            </button>
-          </div>
-          {file.type?.startsWith("image/") ? (
-            <div className="border rounded-xl overflow-hidden bg-white shadow-sm">
-              <img
-                src={file.dataUrl}
-                alt={file.name}
-                className="w-full h-40 object-contain bg-slate-900/5"
-              />
-            </div>
-          ) : (
-            <p className="text-[11px] text-gray-500">Arquivo anexado pronto para o PDF.</p>
-          )}
-        </div>
-      ) : null}
-    </div>
   );
 }
 
