@@ -20,10 +20,8 @@ const currencyToNumber = (s) => {
 /********************
  * Logo
  ********************/
-const AlvoLogo = ({ size = 48, custom }) => {
-  const src = custom?.dataUrl || alvoLogo;
-  const alt = custom?.name || "Alvo BR";
-  return <img src={src} alt={alt} style={{ height: size, width: "auto" }} />;
+const AlvoLogo = ({ size = 48 }) => {
+  return <img src={alvoLogo} alt="Alvo BR" style={{ height: size, width: "auto" }} />;
 };
 
 /********************
@@ -57,12 +55,9 @@ const sample = {
   consultor: "Nome do Consultor",
   phone: "(47) 9 9999-9999",
   email: "contato@alvobr.com.br",
-  siteUrl: "https://alvobr.com.br",
   cliente: "Nome do Cliente",
   clientePhone: "(47) 9 8888-8888",
   clienteEmail: "cliente@email.com",
-  recursosCliente: "",
-  logo: null,
   empreendimento: "Nome do Empreendimento",
   endereco: "Endereço completo — Itajaí/SC",
   construtora: "Nome da Construtora",
@@ -431,10 +426,7 @@ export default function App() {
     setStep("resultado");
   };
   const fillExample = () => setData(sample);
-  const clearAll = () =>
-    setData((d) => ({
-      logo: d.logo || null,
-    }));
+  const clearAll = () => setData({});
 
   const imagensGaleria = [data.imagem1, data.imagem2, data.imagem3, data.imagem4].filter(Boolean);
   const resumoFluxoBase = [
@@ -490,7 +482,7 @@ export default function App() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       <header className="sticky top-0 z-40 backdrop-blur border-b bg-white/80">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
-          <AlvoLogo size={36} custom={data.logo} />
+          <AlvoLogo size={36} />
           <div className="flex-1">
             <h1 className="text-xl font-semibold">Alvo Propostas</h1>
             <p className="text-xs text-gray-500">
@@ -553,21 +545,6 @@ export default function App() {
               <Input label="Consultor" value={data.consultor || ""} onChange={handle("consultor")} />
               <Input label="Telefone" value={data.phone || ""} onChange={handle("phone")} />
               <Input label="E-mail" value={data.email || ""} onChange={handle("email")} />
-              <Input
-                label="Site (URL)"
-                value={data.siteUrl || ""}
-                onChange={handle("siteUrl")}
-                placeholder="https://alvobr.com.br"
-              />
-            </div>
-            <div className="mt-4">
-              <FileInput
-                label="Logomarca da proposta"
-                file={data.logo}
-                accept="image/*"
-                helper="Carregue a imagem oficial da Alvo para usar na capa e no cabeçalho."
-                onFileChange={setFile("logo")}
-              />
             </div>
           </Card>
 
@@ -576,12 +553,6 @@ export default function App() {
               <Input label="Nome" value={data.cliente || ""} onChange={handle("cliente")} />
               <Input label="Telefone" value={data.clientePhone || ""} onChange={handle("clientePhone")} />
               <Input label="E-mail" value={data.clienteEmail || ""} onChange={handle("clienteEmail")} />
-              <Input
-                label="Recursos do cliente"
-                value={data.recursosCliente ?? ""}
-                onChange={handleCurrency("recursosCliente")}
-                currency
-              />
             </div>
           </Card>
 
@@ -892,7 +863,7 @@ export default function App() {
           <div ref={resultRef} className="paper mx-auto space-y-10">
             <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-8">
               <div className="flex flex-wrap items-start gap-6">
-                <AlvoLogo size={72} custom={data.logo} />
+                <AlvoLogo size={72} />
                 <div className="flex-1">
                   <h2 className="text-2xl font-semibold text-slate-800">Proposta de Investimento Imobiliário</h2>
                   <p className="text-sm text-gray-500 mt-1">
@@ -913,9 +884,6 @@ export default function App() {
                   <DataRow k="Nome" v={data.cliente} />
                   <DataRow k="Telefone" v={data.clientePhone} />
                   <DataRow k="E-mail" v={data.clienteEmail} />
-                  {currencyToNumber(data.recursosCliente) > 0 && (
-                    <DataRow k="Recursos do cliente" v={brl(data.recursosCliente)} />
-                  )}
                 </div>
                 <div className="rounded-2xl border bg-slate-50 p-4">
                   <h3 className="text-sm font-semibold text-slate-600 mb-3">Empreendimento</h3>
@@ -1037,7 +1005,11 @@ export default function App() {
                         key={`${img.name}-${index}`}
                         className="border rounded-2xl overflow-hidden bg-white shadow-sm"
                       >
-                        <img src={img.dataUrl} alt={img.name || `Imagem ${index + 1}`} className="w-full h-56 object-cover" />
+                        <img
+                          src={img.dataUrl}
+                          alt={img.name || `Imagem ${index + 1}`}
+                          className="w-full h-56 object-contain bg-slate-900/5"
+                        />
                         <figcaption className="px-3 py-2 text-[11px] text-gray-500 truncate">
                           {img.name || `Imagem ${index + 1}`}
                         </figcaption>
@@ -1339,7 +1311,11 @@ function FileInput({ label, file, accept, helper, onFileChange }) {
           </div>
           {file.type?.startsWith("image/") ? (
             <div className="border rounded-xl overflow-hidden bg-white shadow-sm">
-              <img src={file.dataUrl} alt={file.name} className="w-full h-40 object-cover" />
+              <img
+                src={file.dataUrl}
+                alt={file.name}
+                className="w-full h-40 object-contain bg-slate-900/5"
+              />
             </div>
           ) : (
             <p className="text-[11px] text-gray-500">Arquivo anexado pronto para o PDF.</p>
