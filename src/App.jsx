@@ -26,11 +26,58 @@ const currencyToNumber = (s) => {
   return Number.isFinite(num) ? num : 0;
 };
 
+const formatDate = (value) => {
+  if (!value) return "—";
+  const date = new Date(value);
+  return Number.isFinite(date.getTime()) ? date.toLocaleDateString("pt-BR") : "—";
+};
+
 /********************
  * Logo
  ********************/
 const AlvoLogo = ({ size = 48 }) => {
   return <img src={alvoLogo} alt="Alvo BR" style={{ height: size, width: "auto" }} />;
+};
+
+const PageHeader = ({ data, title = "Proposta de Investimento Imobiliário", subtitle }) => {
+  const company = data.company || "—";
+  const consultor = data.consultor || "Consultor";
+  const headerSubtitle = subtitle || `Elaborada por ${company} · ${consultor}`;
+
+  return (
+    <header className="flex flex-wrap items-start justify-between gap-6 pb-6 border-b border-slate-200">
+      <div className="flex items-start gap-4 flex-1 min-w-[220px]">
+        <AlvoLogo size={64} />
+        <div>
+          <h2 className="text-xl font-semibold text-slate-800 leading-tight">{title}</h2>
+          <p className="text-sm text-gray-500 mt-1">{headerSubtitle}</p>
+        </div>
+      </div>
+      <div className="text-sm text-right text-gray-500 space-y-1 min-w-[180px]">
+        <p>Data: {formatDate(data.date)}</p>
+        <p>Validade: {formatDate(data.validade)}</p>
+        <p>Telefone: {data.phone || "—"}</p>
+        <p>E-mail: {data.email || "—"}</p>
+      </div>
+    </header>
+  );
+};
+
+const PageFooter = ({ data, children }) => {
+  const company = data.company || "Alvo BR";
+  const phone = data.phone ? ` · ${data.phone}` : "";
+  const email = data.email ? ` · ${data.email}` : "";
+
+  return (
+    <footer className="pt-6 mt-6 border-t border-dashed border-slate-200 space-y-2 text-[11px] text-gray-500 leading-5">
+      {children}
+      <p>
+        * Formas de pagamento sujeitas a atualização por <strong>CUB (período de obras)</strong> e <strong>IGP-M + 1%</strong>
+        após a entrega das chaves.
+      </p>
+      <p>© {new Date().getFullYear()} Alvo BR — {company}{phone}{email}</p>
+    </footer>
+  );
 };
 
 /********************
@@ -1163,21 +1210,7 @@ export default function App() {
         <main className="mx-auto max-w-7xl p-6 text-[color:var(--petrol-black)]">
           <div ref={resultRef} className="paper mx-auto space-y-8">
             <section className={`${pageClass} bg-white/95 border border-slate-200 rounded-3xl shadow-xl p-10 space-y-6`}>
-              <div className="flex flex-wrap items-start gap-6">
-                <AlvoLogo size={72} />
-                <div className="flex-1">
-                  <h2 className="text-2xl font-semibold text-slate-800">Proposta de Investimento Imobiliário</h2>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Elaborada por {data.company || "—"} · {data.consultor || "Consultor"}
-                  </p>
-                </div>
-                <div className="text-sm text-right text-gray-500">
-                  <p>Data: {formatDate(data.date)}</p>
-                  <p>Validade: {formatDate(data.validade)}</p>
-                  <p>Telefone: {data.phone || "—"}</p>
-                  <p>E-mail: {data.email || "—"}</p>
-                </div>
-              </div>
+              <PageHeader data={data} />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="rounded-2xl border bg-slate-50 p-4">
@@ -1198,7 +1231,7 @@ export default function App() {
                   <DataRow k="Preço/m²" v={valores.precoM2 ? brl(valores.precoM2) : "—"} />
                 </div>
               </div>
-              <div className="pt-4 border-t border-dashed border-slate-200 space-y-4">
+              <div className="pt-4 space-y-4">
                 <h3 className="text-lg font-semibold text-slate-700">Resumo Executivo</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {resumoKPIs.map((kpi) => (
@@ -1212,11 +1245,19 @@ export default function App() {
                   ))}
                 </div>
               </div>
+
+              <PageFooter data={data} />
             </section>
 
             <section className={`${pageClass} bg-white/95 border border-slate-200 rounded-3xl shadow-xl p-10 space-y-5`}>
+              <PageHeader
+                data={data}
+                title="Condições comerciais & fluxo de pagamento"
+                subtitle="Resumo financeiro do cliente, short stay e banco"
+              />
+
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold text-slate-700">Condições comerciais & fluxo de pagamento</h3>
+                <h3 className="text-base font-semibold text-slate-700">Resumo do fluxo de pagamento</h3>
                 <button
                   onClick={() => setShowFluxoDetalhado((prev) => !prev)}
                   className="px-3 py-1.5 rounded-full border text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition"
@@ -1371,14 +1412,16 @@ export default function App() {
                   </table>
                 </div>
               )}
-              <p className="text-[11px] text-gray-500">
-                Fórmulas: Valor total = SOMA(Entrada + Obra + Reforços + (Chaves à vista ou Pós-chaves)). Acumulado(i) =
-                Acumulado(i-1) + Valor(i). % do fluxo(i) = Acumulado(i) / Total do fluxo.
-              </p>
+
+              <PageFooter data={data} />
             </section>
 
             <section className={`${pageClass} bg-white/95 border border-slate-200 rounded-3xl shadow-xl p-10 space-y-5`}>
-              <h3 className="text-lg font-semibold text-slate-700">Cenários de Retorno</h3>
+              <PageHeader
+                data={data}
+                title="Cenários de Retorno"
+                subtitle="Resultados com base no histórico de valorização da região"
+              />
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-[13px] shadow-sm space-y-3">
                   <div className="flex items-center justify-between">
@@ -1387,7 +1430,7 @@ export default function App() {
                   </div>
                   <table className="w-full">
                     <tbody>
-                      <TR label="Valorização anual" value={pct(data.apreciacao)} />
+                      <TR label="Histórico de valorização anual da região" value={pct(data.apreciacao)} />
                       <TR label="Valor hoje" value={brl(valores.total)} />
                       <TR label="Valor final" value={brl(cenario1.valorFinal)} />
                       <TR label="Lucro" value={brl(cenario1.lucro)} />
@@ -1424,7 +1467,7 @@ export default function App() {
                   <table className="w-full">
                     <tbody>
                       <TR label="Renda em 5 anos" value={brl(cenario2.rendaAcumulada)} />
-                      <TR label="Valorização até entrega" value={brl(cenario2.patrimonioAcrescido)} />
+                      <TR label="Histórico de valorização até a entrega" value={brl(cenario2.patrimonioAcrescido)} />
                       <TR label="Valor final" value={brl(cenario2.valorFinal)} />
                       <tr className="border-t-2 bg-blue-200">
                         <td className="p-3 font-bold">RETORNO TOTAL</td>
@@ -1442,19 +1485,12 @@ export default function App() {
                   </table>
                 </div>
               </div>
-              <div className="pt-4 border-t border-dashed border-slate-200 space-y-2 text-[11px] text-gray-500">
+              <PageFooter data={data}>
                 <p className="italic leading-5">
-                  * Estimativas baseadas em projeções de mercado. ROI = retorno sobre o valor total; ROAS = retorno sobre o
-                  investimento real.
+                  * Estimativas baseadas no histórico de valorização da região e em dados de mercado comparáveis. ROI = retorno
+                  sobre o valor total; ROAS = retorno sobre o investimento real.
                 </p>
-                <p className="leading-5">
-                  * Formas de pagamento sujeitas a atualização por <strong>CUB (período de obras)</strong> e <strong>IGP-M + 1%</strong>
-                  após a entrega das chaves.
-                </p>
-                <p className="leading-5">
-                  © {new Date().getFullYear()} Alvo BR — {data.company} · {data.phone} · {data.email}
-                </p>
-              </div>
+              </PageFooter>
             </section>
           </div>
         </main>
@@ -1633,12 +1669,6 @@ export default function App() {
 /********************
  * Helpers & UI
  ********************/
-const formatDate = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toLocaleDateString("pt-BR") : "—";
-};
-
 function FluxoResumoCards({ items, columns = "grid grid-cols-1 sm:grid-cols-2 gap-2" }) {
   if (!items || items.length === 0) return null;
   return (
