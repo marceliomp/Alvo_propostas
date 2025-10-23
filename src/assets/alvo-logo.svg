@@ -1,0 +1,33 @@
+<svg width="420" height="140" viewBox="0 0 420 140" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Alvo BR</title>
+  <desc id="desc">Marca da Alvo com alvo circular e tipografia institucional</desc>
+  <defs>
+    <linearGradient id="alvoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e" />
+      <stop offset="50%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#22d3ee" />
+    </linearGradient>
+    <linearGradient id="alvoText" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(40,20)">
+    <circle cx="45" cy="50" r="45" fill="none" stroke="url(#alvoGradient)" stroke-width="8" />
+    <circle cx="45" cy="50" r="28" fill="none" stroke="#0f172a" stroke-opacity="0.65" stroke-width="6" />
+    <circle cx="45" cy="50" r="14" fill="url(#alvoGradient)" />
+    <line x1="45" y1="5" x2="45" y2="95" stroke="#0f172a" stroke-opacity="0.2" stroke-width="4" />
+    <line x1="0" y1="50" x2="90" y2="50" stroke="#0f172a" stroke-opacity="0.2" stroke-width="4" />
+  </g>
+  <g transform="translate(140,45)">
+    <text x="0" y="40" font-family="'Poppins','Segoe UI',sans-serif" font-weight="700" font-size="64" fill="url(#alvoText)" letter-spacing="-2">
+      ALVO
+    </text>
+    <text x="212" y="40" font-family="'Poppins','Segoe UI',sans-serif" font-weight="600" font-size="30" fill="#0ea5e9">
+      BR
+    </text>
+    <text x="2" y="78" font-family="'Poppins','Segoe UI',sans-serif" font-weight="500" font-size="18" fill="#2563eb" letter-spacing="4">
+      INTELIGÊNCIA IMOBILIÁRIA
+    </text>
+  </g>
+</svg>
