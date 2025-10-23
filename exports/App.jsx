@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import alvoLogo from "./assets/alvo-logo.svg";
+import { ALVO_LOGO_DATA_URL, ALVO_LOGO_STYLE } from "./logoDataUrl";
 
 const palette = {
   petrolBlue: "#003B46",
@@ -36,7 +36,14 @@ const formatDate = (value) => {
  * Logo
  ********************/
 const AlvoLogo = ({ size = 48 }) => {
-  return <img src={alvoLogo} alt="Alvo BR" style={{ height: size, width: "auto" }} />;
+  return (
+    <span
+      className="alvo-logo"
+      style={{ height: size, width: size }}
+      role="img"
+      aria-label="Alvo BR"
+    />
+  );
 };
 
 const PageHeader = ({ data, title = "Proposta de Investimento Imobiliário", subtitle }) => {
@@ -168,6 +175,21 @@ export default function App() {
   const [showFluxoDetalhado, setShowFluxoDetalhado] = useState(false);
   const [pdfOrientation, setPdfOrientation] = useState("landscape");
   const resultRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const existing = document.querySelector("link[rel='icon']");
+    const link = existing || document.createElement("link");
+    link.rel = "icon";
+    link.type = "image/png";
+    link.href = ALVO_LOGO_DATA_URL;
+    if (!existing) {
+      document.head.appendChild(link);
+    }
+    return () => {
+      link.href = ALVO_LOGO_DATA_URL;
+    };
+  }, []);
 
   useEffect(() => {
     setData((d) => {
@@ -739,6 +761,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen theme-wrapper">
+      <style>{ALVO_LOGO_STYLE}</style>
       <header className="sticky top-0 z-40 theme-header">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
           <AlvoLogo size={36} />
