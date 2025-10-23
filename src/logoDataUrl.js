@@ -130,13 +130,3 @@ export const ALVO_LOGO_DATA_URL = [
   "AAAAAAgEqgAwAAAAAAAEAl0AEAAAAAAACgEugAAAAAAAAAUAl0AAAAAAAAAKgEOgAAAAAAAABUAh0AAAAAAAAAKoEOAAAAAAAAAJVABwAAAAAAAIBKoAMAAA",
   "AAAABAVQOLKKxC4ClMtAAAAABJRU5ErkJggg==",
 ].join("");
-
-export const ALVO_LOGO_STYLE = `
-  .alvo-logo {
-    background-image: url('${ALVO_LOGO_DATA_URL}');
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-    display: inline-block;
-  }
-`;

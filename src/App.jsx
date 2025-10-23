@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ALVO_LOGO_DATA_URL, ALVO_LOGO_STYLE } from "./logoDataUrl";
+import { ALVO_LOGO_DATA_URL } from "./logoDataUrl";
 
 const palette = {
   petrolBlue: "#003B46",
@@ -37,11 +37,11 @@ const formatDate = (value) => {
  ********************/
 const AlvoLogo = ({ size = 48 }) => {
   return (
-    <span
-      className="alvo-logo"
-      style={{ height: size, width: size }}
-      role="img"
-      aria-label="Alvo BR"
+    <img
+      src={ALVO_LOGO_DATA_URL}
+      alt="Logomarca Alvo BR"
+      style={{ height: size, width: size, objectFit: "contain", display: "inline-block" }}
+      draggable={false}
     />
   );
 };
@@ -761,7 +761,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen theme-wrapper">
-      <style>{ALVO_LOGO_STYLE}</style>
       <header className="sticky top-0 z-40 theme-header">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
           <AlvoLogo size={36} />
