@@ -17,6 +17,56 @@ const currencyToNumber = (s) => {
   return Number.isFinite(num) ? num : 0;
 };
 
+const referenciasComparativos = [
+  {
+    empresa: "Cyrela",
+    empreendimento: "Prime Vision",
+    valorTotal: 1150000,
+    entrada: 115000,
+    obra: 345000,
+    reforcos: 60000,
+    chaves: 0,
+    financiamento: 630000,
+    observacoes: "Entrega em 2027 com mobiliário de áreas comuns incluso.",
+  },
+  {
+    empresa: "GND Incorporadora",
+    empreendimento: "Essence Residence",
+    valorTotal: 1080000,
+    entrada: 162000,
+    obra: 270000,
+    reforcos: 54000,
+    chaves: 54000,
+    financiamento: 540000,
+    observacoes: "Parcelamento direto com reforços semestrais atualizados pelo CUB.",
+  },
+  {
+    empresa: "We Empreendimentos",
+    empreendimento: "Aurora Towers",
+    valorTotal: 990000,
+    entrada: 99000,
+    obra: 297000,
+    reforcos: 0,
+    chaves: 99000,
+    financiamento: 495000,
+    observacoes: "Financiamento com taxa pré-fixada garantida na assinatura.",
+  },
+];
+
+const createComparativo = (overrides = {}) => ({
+  id: `comp-${Math.random().toString(36).slice(2, 8)}`,
+  empresa: "",
+  empreendimento: "",
+  valorTotal: 0,
+  entrada: 0,
+  obra: 0,
+  reforcos: 0,
+  chaves: 0,
+  financiamento: 0,
+  observacoes: "",
+  ...overrides,
+});
+
 /********************
  * Logo
  ********************/
@@ -89,6 +139,7 @@ const sample = {
   imagem4: null,
   chavesExtraValor: 0,
   chavesExtraQuando: "na_entrega",
+  comparativos: referenciasComparativos.slice(0, 2).map((ref) => createComparativo(ref)),
 };
 
 /********************
@@ -100,6 +151,15 @@ export default function App() {
   const [showFluxoDetalhado, setShowFluxoDetalhado] = useState(false);
   const [pdfOrientation, setPdfOrientation] = useState("landscape");
   const resultRef = useRef(null);
+
+  useEffect(() => {
+    setData((current) => {
+      if (Array.isArray(current.comparativos) && current.comparativos.length) {
+        return current;
+      }
+      return { ...current, comparativos: [createComparativo()] };
+    });
+  }, []);
 
   useEffect(() => {
     setData((d) => {
@@ -282,6 +342,7 @@ export default function App() {
       totalFluxoSemFin,
       totalAteChaves,
       totalChavesEntrega,
+      totalChavesCliente,
       chavesExtraValor,
       chavesExtraNaEntrega,
       chavesExtraPos,
@@ -333,6 +394,57 @@ export default function App() {
     };
   }, [valores, data]);
 
+  const comparativosProcessados = useMemo(() => {
+    const preparar = (comp) => {
+      const valorTotal = Math.max(0, Number(comp.valorTotal || 0));
+      const entrada = Math.max(0, Number(comp.entrada || 0));
+      const obra = Math.max(0, Number(comp.obra || 0));
+      const reforcos = Math.max(0, Number(comp.reforcos || 0));
+      const chaves = Math.max(0, Number(comp.chaves || 0));
+      const financiamento = Math.max(0, Number(comp.financiamento || 0));
+      const totalCliente = entrada + obra + reforcos + chaves;
+      const pagamentoTotal = totalCliente + financiamento;
+      const pct = (valor) => (valorTotal > 0 ? (valor / valorTotal) * 100 : 0);
+      return {
+        ...comp,
+        valorTotal,
+        entrada,
+        obra,
+        reforcos,
+        chaves,
+        financiamento,
+        totalCliente,
+        pagamentoTotal,
+        percentuais: {
+          entrada: pct(entrada),
+          obra: pct(obra),
+          reforcos: pct(reforcos),
+          chaves: pct(chaves),
+          financiamento: pct(financiamento),
+        },
+      };
+    };
+
+    const concorrentes = (Array.isArray(data.comparativos) ? data.comparativos : [])
+      .map(preparar)
+      .filter((comp) => comp.empresa || comp.empreendimento || comp.valorTotal > 0 || comp.totalCliente > 0);
+
+    const proposta = preparar({
+      id: "alvo",
+      empresa: data.company || "Alvo BR",
+      empreendimento: data.empreendimento || "Proposta Alvo",
+      valorTotal: valores.total,
+      entrada: valores.totalEntrada,
+      obra: valores.totalObra,
+      reforcos: valores.totalReforcos,
+      chaves: valores.totalChavesCliente,
+      financiamento: valores.totalFinanciado,
+      observacoes: "Fluxo calculado automaticamente pela Alvo.",
+    });
+
+    return { proposta, concorrentes };
+  }, [data.comparativos, data.company, data.empreendimento, valores]);
+
   const handle = (k) => (e) => setData((d) => ({ ...d, [k]: e.target.value }));
   const handleNumeric = (k) => (e) => {
     const raw = e.target.value;
@@ -370,6 +482,41 @@ export default function App() {
 
   const recalc = () => setData((d) => ({ ...d }));
   const setFile = (k) => (file) => setData((d) => ({ ...d, [k]: file }));
+  const handleComparativoText = (id, key) => (event) => {
+    const value = event.target.value;
+    setData((prev) => ({
+      ...prev,
+      comparativos: (prev.comparativos || []).map((comp) => (comp.id === id ? { ...comp, [key]: value } : comp)),
+    }));
+  };
+  const handleComparativoCurrency = (id, key) => (event) => {
+    const value = Math.max(0, currencyToNumber(event.target.value));
+    setData((prev) => ({
+      ...prev,
+      comparativos: (prev.comparativos || []).map((comp) => (comp.id === id ? { ...comp, [key]: value } : comp)),
+    }));
+  };
+  const addComparativo = () => {
+    setData((prev) => ({
+      ...prev,
+      comparativos: [...(prev.comparativos || []), createComparativo()],
+    }));
+  };
+  const removeComparativo = (id) => {
+    setData((prev) => {
+      const restantes = (prev.comparativos || []).filter((comp) => comp.id !== id);
+      return {
+        ...prev,
+        comparativos: restantes.length ? restantes : [createComparativo()],
+      };
+    });
+  };
+  const preencherComparativos = () => {
+    setData((prev) => ({
+      ...prev,
+      comparativos: referenciasComparativos.map((ref) => createComparativo(ref)),
+    }));
+  };
 
   const savePDF = async () => {
     if (!resultRef.current) return;
@@ -396,7 +543,7 @@ export default function App() {
       page.style.boxShadow = "none";
 
       const canvas = await window.html2canvas(page, {
-        scale: Math.min(window.devicePixelRatio || 1.5, 1.6),
+        scale: Math.min(window.devicePixelRatio || 1.4, 1.35),
         useCORS: true,
         backgroundColor: "#ffffff",
       });
@@ -405,7 +552,7 @@ export default function App() {
       page.style.maxWidth = originalMaxWidth || "";
       page.style.boxShadow = originalBoxShadow || "";
 
-      const imgData = canvas.toDataURL("image/jpeg", 0.82);
+      const imgData = canvas.toDataURL("image/jpeg", 0.68);
       const ratio = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
       const renderWidth = canvas.width * ratio;
       const renderHeight = canvas.height * ratio;
@@ -426,7 +573,7 @@ export default function App() {
     setStep("resultado");
   };
   const fillExample = () => setData(sample);
-  const clearAll = () => setData({});
+  const clearAll = () => setData({ comparativos: [createComparativo()] });
 
   const imagensGaleria = [data.imagem1, data.imagem2, data.imagem3, data.imagem4].filter(Boolean);
   const fluxoResumo = useMemo(() => {
@@ -921,7 +1068,123 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="5) Materiais e mídias">
+          <Card title="5) Comparativos de mercado">
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600">
+                Consulte referências recentes e registre outras propostas para comparar fluxos e condições com o cliente.
+                Use o botão abaixo para carregar exemplos pesquisados em incorporadoras consolidadas e ajuste os valores conforme
+                sua negociação.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={preencherComparativos}
+                  className="px-4 py-2 rounded-full bg-emerald-600 text-white text-xs font-semibold shadow-sm hover:bg-emerald-700 transition"
+                >
+                  Usar referências de mercado
+                </button>
+                <button
+                  type="button"
+                  onClick={addComparativo}
+                  className="px-4 py-2 rounded-full border border-emerald-200 text-emerald-700 text-xs font-semibold hover:bg-emerald-50 transition"
+                >
+                  Adicionar comparativo
+                </button>
+              </div>
+              <div className="space-y-4">
+                {(data.comparativos || []).map((comp, index) => (
+                  <div key={comp.id} className="border border-white/60 bg-white/80 rounded-2xl p-4 shadow-sm space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <h5 className="text-sm font-semibold text-slate-700">
+                        {`Comparativo ${index + 1}`}
+                        {comp.empresa ? ` — ${comp.empresa}` : ""}
+                      </h5>
+                      <button
+                        type="button"
+                        onClick={() => removeComparativo(comp.id)}
+                        className="text-xs font-semibold text-rose-600 hover:text-rose-700"
+                      >
+                        Remover
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Input
+                        label="Empresa"
+                        value={comp.empresa}
+                        onChange={handleComparativoText(comp.id, "empresa")}
+                        placeholder="Nome da incorporadora"
+                      />
+                      <Input
+                        label="Empreendimento"
+                        value={comp.empreendimento}
+                        onChange={handleComparativoText(comp.id, "empreendimento")}
+                        placeholder="Nome da proposta concorrente"
+                      />
+                      <Input
+                        label="Valor do imóvel"
+                        value={comp.valorTotal}
+                        onChange={handleComparativoCurrency(comp.id, "valorTotal")}
+                        currency
+                      />
+                      <Input
+                        label="Entrada"
+                        value={comp.entrada}
+                        onChange={handleComparativoCurrency(comp.id, "entrada")}
+                        currency
+                      />
+                      <Input
+                        label="Durante a obra"
+                        value={comp.obra}
+                        onChange={handleComparativoCurrency(comp.id, "obra")}
+                        currency
+                      />
+                      <Input
+                        label="Reforços / balões"
+                        value={comp.reforcos}
+                        onChange={handleComparativoCurrency(comp.id, "reforcos")}
+                        currency
+                      />
+                      <Input
+                        label="Chaves / pós-chaves"
+                        value={comp.chaves}
+                        onChange={handleComparativoCurrency(comp.id, "chaves")}
+                        currency
+                      />
+                      <Input
+                        label="Financiamento"
+                        value={comp.financiamento}
+                        onChange={handleComparativoCurrency(comp.id, "financiamento")}
+                        currency
+                      />
+                    </div>
+                    <label className="block">
+                      <div className="text-xs text-gray-600 mb-1">Observações</div>
+                      <textarea
+                        rows={2}
+                        value={comp.observacoes}
+                        onChange={handleComparativoText(comp.id, "observacoes")}
+                        className="w-full rounded-xl border px-3 py-2 text-sm text-slate-700 bg-white/90 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        placeholder="Destaques comerciais, facilidades ou diferenciais do concorrente"
+                      />
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs text-gray-600">
+                      <div className="rounded-xl border bg-slate-50 p-3">
+                        Entrada vs. valor: <strong>{pct(comparativosProcessados.concorrentes[index]?.percentuais.entrada || 0)}</strong>
+                      </div>
+                      <div className="rounded-xl border bg-slate-50 p-3">
+                        Total pago pelo cliente: <strong>{brl((comparativosProcessados.concorrentes[index]?.totalCliente) || 0)}</strong>
+                      </div>
+                      <div className="rounded-xl border bg-slate-50 p-3">
+                        Pagamento total: <strong>{brl((comparativosProcessados.concorrentes[index]?.pagamentoTotal) || 0)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          <Card title="6) Materiais e mídias">
             <div className="space-y-4">
               <FileInput
                 label="Arquivo original do projeto"
@@ -1061,47 +1324,59 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              {(data.arquivoOriginal || imagensGaleria.length > 0) && (
+              {comparativosProcessados.concorrentes.length > 0 && (
                 <div className="pt-4 border-t border-dashed border-slate-200 space-y-4">
-                  <h4 className="text-sm font-semibold text-slate-700">Materiais do Empreendimento</h4>
-                  {data.arquivoOriginal && (
-                    <div className="rounded-2xl border bg-slate-50 p-4 flex flex-wrap items-center justify-between gap-3 text-sm shadow-sm">
-                      <div>
-                        <p className="font-semibold text-slate-700">Arquivo original</p>
-                        <p className="text-xs text-gray-500">{data.arquivoOriginal.name}</p>
-                      </div>
-                      <a
-                        href={data.arquivoOriginal.dataUrl}
-                        download={data.arquivoOriginal.name || "arquivo-original"}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-4 py-2 rounded-full border bg-white text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition"
-                      >
-                        Abrir arquivo
-                      </a>
-                    </div>
-                  )}
-                  {imagensGaleria.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {imagensGaleria.map((img, index) => (
-                        <figure
-                          key={`${img.name}-${index}`}
-                          className="border rounded-2xl overflow-hidden bg-white shadow-sm"
-                        >
-                          <img
-                            src={img.dataUrl}
-                            alt={img.name || `Imagem ${index + 1}`}
-                            className="w-full h-52 object-contain bg-slate-900/5"
-                          />
-                          <figcaption className="px-3 py-2 text-[11px] text-gray-500 truncate">
-                            {img.name || `Imagem ${index + 1}`}
-                          </figcaption>
-                        </figure>
-                      ))}
-                    </div>
-                  )}
+                  <h4 className="text-sm font-semibold text-slate-700">Comparativo de propostas</h4>
+                  <ComparativoTabela
+                    proposta={comparativosProcessados.proposta}
+                    concorrentes={comparativosProcessados.concorrentes}
+                  />
                 </div>
               )}
+
+              <div className="pt-4 border-t border-dashed border-slate-200 space-y-4">
+                <h4 className="text-sm font-semibold text-slate-700">Materiais do Empreendimento</h4>
+                {data.arquivoOriginal ? (
+                  <div className="rounded-2xl border bg-slate-50 p-4 flex flex-wrap items-center justify-between gap-3 text-sm shadow-sm">
+                    <div>
+                      <p className="font-semibold text-slate-700">Arquivo original</p>
+                      <p className="text-xs text-gray-500">{data.arquivoOriginal.name}</p>
+                    </div>
+                    <a
+                      href={data.arquivoOriginal.dataUrl}
+                      download={data.arquivoOriginal.name || "arquivo-original"}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-4 py-2 rounded-full border bg-white text-xs font-semibold text-emerald-700 hover:bg-emerald-50 transition"
+                    >
+                      Abrir arquivo
+                    </a>
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">Nenhum arquivo original foi anexado para esta proposta.</p>
+                )}
+                {imagensGaleria.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {imagensGaleria.map((img, index) => (
+                      <figure
+                        key={`${img.name}-${index}`}
+                        className="border rounded-2xl overflow-hidden bg-white shadow-sm"
+                      >
+                        <img
+                          src={img.dataUrl}
+                          alt={img.name || `Imagem ${index + 1}`}
+                          className="w-full h-52 object-contain bg-slate-900/5"
+                        />
+                        <figcaption className="px-3 py-2 text-[11px] text-gray-500 truncate">
+                          {img.name || `Imagem ${index + 1}`}
+                        </figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-500">Sem imagens anexadas. Utilize a seção de materiais para adicionar fotos do empreendimento.</p>
+                )}
+              </div>
               <p className="text-[11px] text-gray-500">
                 Fórmulas: Valor total = SOMA(Entrada + Obra + Reforços + (Chaves à vista ou Pós-chaves)). Acumulado(i) =
                 Acumulado(i-1) + Valor(i). % do fluxo(i) = Acumulado(i) / Total do fluxo.
@@ -1337,6 +1612,114 @@ function FluxoResumoCards({ items, columns = "grid grid-cols-1 sm:grid-cols-2 ga
           ) : null}
         </div>
       ))}
+    </div>
+  );
+}
+
+function ComparativoTabela({ proposta, concorrentes }) {
+  const colunas = [
+    {
+      ...proposta,
+      titulo: proposta.empresa || "Alvo BR",
+      subtitulo: proposta.empreendimento || "Proposta Alvo",
+      destaque: true,
+    },
+    ...concorrentes.map((comp, idx) => ({
+      ...comp,
+      titulo: comp.empresa || `Concorrente ${idx + 1}`,
+      subtitulo: comp.empreendimento || "—",
+      destaque: false,
+    })),
+  ];
+
+  const linhas = [
+    { key: "valorTotal", label: "Valor do imóvel", mostrarPercentual: false },
+    { key: "entrada", label: "Entrada", mostrarPercentual: true },
+    { key: "obra", label: "Durante a obra", mostrarPercentual: true },
+    { key: "reforcos", label: "Reforços / balões", mostrarPercentual: true },
+    { key: "chaves", label: "Chaves / pós-chaves", mostrarPercentual: true },
+    { key: "financiamento", label: "Financiamento", mostrarPercentual: true },
+    { key: "totalCliente", label: "Pago pelo cliente", mostrarPercentual: false },
+    { key: "pagamentoTotal", label: "Pagamento total", mostrarPercentual: false },
+  ];
+
+  const observacoes = colunas.filter((col) => col.observacoes);
+
+  return (
+    <div className="space-y-4">
+      <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
+        <table className="w-full text-xs">
+          <thead className="bg-slate-100 text-slate-600 uppercase tracking-wide">
+            <tr>
+              <th className="px-4 py-3 text-left font-semibold">Componente</th>
+              {colunas.map((col) => (
+                <th key={col.id} className="px-4 py-3 text-left font-semibold">
+                  <div className={`text-sm font-semibold ${col.destaque ? "text-emerald-700" : "text-slate-700"}`}>
+                    {col.titulo}
+                  </div>
+                  <div className="text-[11px] text-gray-500 font-normal">{col.subtitulo}</div>
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-100">
+            {linhas.map((linha) => (
+              <tr key={linha.key} className="bg-white">
+                <td className="px-4 py-3 font-semibold text-slate-700">{linha.label}</td>
+                {colunas.map((col) => {
+                  const valor = col[linha.key] || 0;
+                  const percentual = linha.mostrarPercentual ? col.percentuais?.[linha.key] ?? 0 : null;
+                  return (
+                    <td key={`${col.id}-${linha.key}`} className="px-4 py-3">
+                      <div className="font-semibold text-slate-800">{brl(valor)}</div>
+                      {linha.mostrarPercentual ? (
+                        <div className="text-[11px] text-gray-500">{pct(percentual)}</div>
+                      ) : null}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        {colunas.map((col) => (
+          <div
+            key={`${col.id}-resumo`}
+            className={`rounded-2xl border p-3 shadow-sm ${col.destaque ? "bg-emerald-50 border-emerald-200" : "bg-white"}`}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-sm font-semibold text-slate-700">{col.titulo}</div>
+                <div className="text-[11px] text-gray-500">{col.subtitulo}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-[11px] text-gray-500">Pago pelo cliente</div>
+                <div className="text-sm font-bold text-slate-800">{brl(col.totalCliente || 0)}</div>
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-gray-500">
+              <div>
+                <span className="font-semibold text-slate-700">Financiamento:</span> {brl(col.financiamento || 0)}
+              </div>
+              <div className="text-right">
+                <span className="font-semibold text-slate-700">Total:</span> {brl(col.pagamentoTotal || 0)}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {observacoes.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-gray-600 space-y-2">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">Observações relevantes</p>
+          {observacoes.map((col) => (
+            <p key={`${col.id}-obs`}>
+              <strong>{col.titulo}:</strong> {col.observacoes}
+            </p>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

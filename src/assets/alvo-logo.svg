@@ -1,12 +1,31 @@
-<svg width="320" height="120" viewBox="0 0 320 120" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
-  <title id="title">Alvo BR</title>
-  <desc id="desc">Marca simplificada da Alvo BR com texto e alvo circular</desc>
-  <rect width="320" height="120" rx="20" fill="#ffffff"/>
-  <text x="20" y="78" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="64" font-weight="800" fill="#1f2937" letter-spacing="-2">ALVO</text>
-  <g transform="translate(220,20)">
-    <circle cx="40" cy="40" r="36" fill="none" stroke="#1f2937" stroke-width="8"/>
-    <circle cx="40" cy="40" r="22" fill="none" stroke="#1f2937" stroke-width="6" opacity="0.75"/>
-    <circle cx="40" cy="40" r="12" fill="#34d399"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="120" viewBox="0 0 320 120" role="img" aria-labelledby="title desc">
+  <title id="title">Logomarca oficial Alvo</title>
+  <desc id="desc">Marca vetorial inspirada no alvo original, com tipografia forte e alvo verde com seta ascendente.</desc>
+  <defs>
+    <linearGradient id="alvoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f766e" />
+      <stop offset="45%" stop-color="#10b981" />
+      <stop offset="100%" stop-color="#34d399" />
+    </linearGradient>
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e293b" />
+    </linearGradient>
+  </defs>
+  <rect width="320" height="120" rx="28" fill="#ffffff" />
+  <g transform="translate(24,34)">
+    <text x="0" y="46" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="64" font-weight="700" fill="url(#textGradient)" letter-spacing="-2">
+      ALV
+    </text>
+    <g transform="translate(178,2)">
+      <circle cx="36" cy="36" r="34" fill="none" stroke="url(#alvoGradient)" stroke-width="6" />
+      <circle cx="36" cy="36" r="22" fill="none" stroke="#0d9488" stroke-width="5" opacity="0.8" />
+      <circle cx="36" cy="36" r="12" fill="url(#alvoGradient)" />
+      <path d="M20 48 l12 -12 l10 10 l18 -26" fill="none" stroke="#0f766e" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+      <polygon points="60,18 74,12 68,26" fill="#0f766e" />
+    </g>
   </g>
-  <text x="220" y="96" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="24" font-weight="700" fill="#2563eb">BR</text>
+  <text x="222" y="96" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="22" font-weight="600" letter-spacing="4" fill="#0f766e">
+    IMOBILIÁRIA
+  </text>
 </svg>
