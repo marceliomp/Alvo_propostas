@@ -58,58 +58,31 @@ function loadScript(src) {
 /********************
  * Defaults
  ********************/
-const generateComparativoId = () => `cmp-${Math.random().toString(36).slice(2, 10)}`;
+const generateInvestimentoId = () => `inv-${Math.random().toString(36).slice(2, 10)}`;
 
-const baseComparativos = [
+const baseInvestimentos = [
   {
-    nome: "Residencial Horizonte",
-    empresa: "Concorrente A",
-    valorTotal: 940000,
-    entradaValor: 94000,
-    entradaParcelas: 1,
-    obraParcelas: 36,
-    obraParcelaValor: 11800,
-    reforcosQuantidade: 2,
-    reforcosValor: 15000,
-    chavesValor: 0,
-    financiamentoValor: 420000,
-    observacoes: "Financiamento bancário pré-aprovado pelo parceiro do concorrente.",
+    nome: "CDI (12 meses)",
+    taxaAnual: 13.15,
+    observacoes: "Projeção considerando CDI atual e aportes mensais iguais ao fluxo.",
   },
   {
-    nome: "Lançamento Vista Atlântica",
-    empresa: "Concorrente B",
-    valorTotal: 965000,
-    entradaValor: 120000,
-    entradaParcelas: 2,
-    obraParcelas: 30,
-    obraParcelaValor: 13500,
-    reforcosQuantidade: 0,
-    reforcosValor: 0,
-    chavesValor: 45000,
-    financiamentoValor: 380000,
-    observacoes: "Inclui mobília básica nas áreas comuns.",
+    nome: "Tesouro Selic",
+    taxaAnual: 12,
+    observacoes: "Título público pós-fixado com liquidez diária.",
   },
 ];
 
-const createComparativo = (overrides = {}) => ({
-  id: generateComparativoId(),
-  empresa: "",
+const createInvestimento = (overrides = {}) => ({
+  id: generateInvestimentoId(),
   nome: "",
-  valorTotal: 0,
-  entradaValor: 0,
-  entradaParcelas: 1,
-  obraParcelas: 0,
-  obraParcelaValor: 0,
-  reforcosQuantidade: 0,
-  reforcosValor: 0,
-  chavesValor: 0,
-  financiamentoValor: 0,
+  taxaAnual: 10,
   observacoes: "",
   highlight: false,
   ...overrides,
 });
 
-const withComparativoIds = (lista = []) => lista.map((item) => createComparativo(item));
+const withInvestimentoIds = (lista = []) => lista.map((item) => createInvestimento(item));
 
 const sample = {
   company: "Alvo BR Imobiliária",
@@ -151,7 +124,7 @@ const sample = {
   imagem4: null,
   chavesExtraValor: 0,
   chavesExtraQuando: "na_entrega",
-  comparativos: baseComparativos,
+  investimentos: baseInvestimentos,
 };
 
 /********************
@@ -161,7 +134,7 @@ export default function App() {
   const [step, setStep] = useState("setup");
   const [data, setData] = useState(() => ({
     ...sample,
-    comparativos: withComparativoIds(sample.comparativos),
+    investimentos: withInvestimentoIds(sample.investimentos),
   }));
   const [showFluxoDetalhado, setShowFluxoDetalhado] = useState(false);
   const [pdfOrientation, setPdfOrientation] = useState("landscape");
@@ -232,13 +205,14 @@ export default function App() {
     const totalPosChavesBase = data.chavesForma === "posConstrutora" ? chavesTotal : 0;
     const totalChavesEntrega = totalChavesEntregaBase + (chavesExtraNaEntrega ? chavesExtraValor : 0);
     const totalPosChaves = totalPosChavesBase + (chavesExtraPos ? chavesExtraValor : 0);
-    const totalChavesCliente = totalChavesEntrega + totalPosChaves;
     const totalFinanciado = chavesFinanciado ? chavesTotal : 0;
-    const totalFluxoSemFin = entradaValor + duranteObraTotal + reforcosTotal + totalChavesCliente;
+    const totalFluxoCliente = entradaValor + duranteObraTotal + reforcosTotal + totalChavesEntrega;
+    const totalFluxoSemFin = totalFluxoCliente;
+    const totalShortStay = totalPosChaves;
     const totalAteChaves = entradaValor + duranteObraTotal + reforcosTotal + totalChavesEntrega;
 
-    const valorInvestidoReal = totalFluxoSemFin;
-    const totalCoberto = valorInvestidoReal + totalFinanciado;
+    const valorInvestidoReal = totalFluxoCliente;
+    const totalCoberto = valorInvestidoReal + totalFinanciado + totalShortStay;
     const saldoACompor = total - totalCoberto;
     const totalJaSomado = totalCoberto;
 
@@ -258,6 +232,8 @@ export default function App() {
         tipo: entradaParcelas === 1 ? "Entrada (ato)" : `Entrada ${i + 1}/${entradaParcelas}`,
         data: addMonths(baseDate, i),
         valor: entradaParcela,
+        offset: i,
+        responsavel: "cliente",
       });
     }
 
@@ -266,6 +242,8 @@ export default function App() {
         tipo: `Obra ${i + 1}/${parcelasObra}`,
         data: addMonths(baseDate, entradaParcelas + i),
         valor: duranteObraParcela,
+        offset: entradaParcelas + i,
+        responsavel: "cliente",
       });
     }
 
@@ -276,6 +254,8 @@ export default function App() {
           tipo: `Reforço ${i + 1}/${qRef}`,
           data: addMonths(baseDate, deslocamento),
           valor: vRef,
+          offset: deslocamento,
+          responsavel: "cliente",
         });
       }
     }
@@ -285,6 +265,8 @@ export default function App() {
         tipo: "Chaves (à vista)",
         data: addMonths(baseDate, entradaParcelas + parcelasObra),
         valor: chavesTotal,
+        offset: entradaParcelas + parcelasObra,
+        responsavel: "cliente",
       });
     }
 
@@ -296,6 +278,8 @@ export default function App() {
           tipo: `Pós-chaves ${i + 1}/${pcs}`,
           data: addMonths(baseDate, entradaParcelas + parcelasObra + i + 1),
           valor: parcelaPos,
+          offset: entradaParcelas + parcelasObra + i + 1,
+          responsavel: "short_stay",
         });
       }
     }
@@ -305,6 +289,8 @@ export default function App() {
         tipo: "Parcela de chaves (construtora)",
         data: addMonths(baseDate, entradaParcelas + parcelasObra),
         valor: chavesExtraValor,
+        offset: entradaParcelas + parcelasObra,
+        responsavel: "cliente",
       });
     }
 
@@ -313,15 +299,30 @@ export default function App() {
         tipo: "Parcela pós-chaves (construtora)",
         data: addMonths(baseDate, entradaParcelas + parcelasObra + 1),
         valor: chavesExtraValor,
+        offset: entradaParcelas + parcelasObra + 1,
+        responsavel: "short_stay",
       });
     }
 
     const scheduleOrdenado = schedule.sort((a, b) => a.data - b.data);
-    let acumulado = 0;
+    let acumuladoCliente = 0;
+    let acumuladoTotal = 0;
+    const denominadorCliente = totalFluxoCliente > 0 ? totalFluxoCliente : 0;
+    const denominadorTotal = totalFluxoCliente + totalShortStay;
     const scheduleDetalhado = scheduleOrdenado.map((item) => {
-      acumulado += item.valor;
-      const percentual = totalFluxoSemFin > 0 ? (acumulado / totalFluxoSemFin) * 100 : 0;
-      return { ...item, acumulado, percentual };
+      acumuladoTotal += item.valor;
+      if (item.responsavel !== "short_stay") {
+        acumuladoCliente += item.valor;
+      }
+      const percentualCliente = denominadorCliente > 0 ? (acumuladoCliente / denominadorCliente) * 100 : 0;
+      const percentualTotal = denominadorTotal > 0 ? (acumuladoTotal / denominadorTotal) * 100 : 0;
+      return {
+        ...item,
+        acumuladoCliente,
+        acumuladoTotal,
+        percentualCliente,
+        percentualTotal,
+      };
     });
 
     return {
@@ -351,6 +352,8 @@ export default function App() {
       totalFluxoSemFin,
       totalAteChaves,
       totalChavesEntrega,
+      totalFluxoCliente,
+      totalShortStay,
       chavesExtraValor,
       chavesExtraNaEntrega,
       chavesExtraPos,
@@ -497,32 +500,41 @@ export default function App() {
   const fillExample = () =>
     setData({
       ...sample,
-      comparativos: withComparativoIds(sample.comparativos),
+      investimentos: withInvestimentoIds(sample.investimentos),
     });
-  const clearAll = () => setData({ comparativos: [] });
+  const clearAll = () =>
+    setData({
+      ...sample,
+      investimentos: [],
+      arquivoOriginal: null,
+      imagem1: null,
+      imagem2: null,
+      imagem3: null,
+      imagem4: null,
+    });
 
   const imagensGaleria = [data.imagem1, data.imagem2, data.imagem3, data.imagem4].filter(Boolean);
-  const comparativosForm = Array.isArray(data.comparativos) ? data.comparativos : [];
+  const investimentosForm = Array.isArray(data.investimentos) ? data.investimentos : [];
 
-  const addComparativo = () =>
+  const addInvestimento = () =>
     setData((d) => {
-      const lista = Array.isArray(d.comparativos) ? d.comparativos : [];
+      const lista = Array.isArray(d.investimentos) ? d.investimentos : [];
       if (lista.length >= 4) return d;
-      return { ...d, comparativos: [...lista, createComparativo()] };
+      return { ...d, investimentos: [...lista, createInvestimento()] };
     });
 
-  const removeComparativo = (id) =>
+  const removeInvestimento = (id) =>
     setData((d) => {
-      const lista = Array.isArray(d.comparativos) ? d.comparativos : [];
+      const lista = Array.isArray(d.investimentos) ? d.investimentos : [];
       const filtrado = lista.filter((item) => item.id !== id);
-      return { ...d, comparativos: filtrado };
+      return { ...d, investimentos: filtrado };
     });
 
-  const updateComparativo = (id, key, value) =>
+  const updateInvestimento = (id, key, value) =>
     setData((d) => {
-      const lista = Array.isArray(d.comparativos) ? d.comparativos : [];
+      const lista = Array.isArray(d.investimentos) ? d.investimentos : [];
       const atualizada = lista.map((item) => (item.id === id ? { ...item, [key]: value } : item));
-      return { ...d, comparativos: atualizada };
+      return { ...d, investimentos: atualizada };
     });
   const fluxoResumo = useMemo(() => {
     const totalCliente = valores.totalFluxoSemFin;
@@ -592,16 +604,16 @@ export default function App() {
     if (valores.totalPosChaves > 0) {
       itens.push({
         key: "pos_chaves",
-        label: "Pós-chaves",
+        label: "Pós-obra (short stay)",
         valor: valores.totalPosChaves,
-        percentual: totalCliente > 0 ? (valores.totalPosChaves / totalCliente) * 100 : 0,
-        contexto: "fluxo do cliente",
+        percentual: totalGeral > 0 ? (valores.totalPosChaves / totalGeral) * 100 : 0,
+        contexto: "coberto pela operação",
         detalhe:
           data.chavesForma === "posConstrutora"
             ? `${Math.max(1, Number(data.chavesPosParcelas || 0))}x de ${brl(
                 valores.chavesTotal / Math.max(1, Number(data.chavesPosParcelas || 1))
               )}`
-            : "Parcela acordada com a construtora",
+            : "Quitado com renda operacional",
       });
     }
 
@@ -611,7 +623,7 @@ export default function App() {
         label: "Financiamento (banco)",
         valor: valores.totalFinanciado,
         percentual: totalGeral > 0 ? (valores.totalFinanciado / totalGeral) * 100 : 0,
-        contexto: "total do cliente + banco",
+        contexto: "cliente + parceiros",
         destaque: true,
         detalhe: "Valor previsto para financiamento bancário",
       });
@@ -629,295 +641,94 @@ export default function App() {
   const resumoFluxo = fluxoResumo.itens;
   const totalFluxoCliente = fluxoResumo.totalCliente;
   const totalFluxoGeral = fluxoResumo.totalGeral;
-  const totalChavesCliente = valores.totalChavesEntrega + valores.totalPosChaves;
+  const totalChavesCliente = valores.totalChavesEntrega;
+  const totalShortStay = valores.totalShortStay;
 
-  const comparativosDetalhados = useMemo(() => {
-    const lista = Array.isArray(data.comparativos) ? data.comparativos : [];
+  const scheduleCliente = useMemo(
+    () =>
+      Array.isArray(valores.schedule)
+        ? valores.schedule.filter((item) => item.responsavel !== "short_stay")
+        : [],
+    [valores.schedule]
+  );
+
+  const horizonteMeses = useMemo(() => {
+    if (!scheduleCliente.length) return 0;
+    return scheduleCliente.reduce((max, item) => Math.max(max, Number(item.offset || 0)), 0);
+  }, [scheduleCliente]);
+
+  const investimentosDetalhados = useMemo(() => {
+    const lista = Array.isArray(data.investimentos) ? data.investimentos : [];
+    const aporteTotal = valores.totalFluxoSemFin;
     return lista
       .map((item, index) => {
-        const id = item.id || `cmp-${index}`;
+        const id = item.id || `inv-${index}`;
         const nome = (item.nome || "").trim();
-        const empresa = (item.empresa || "").trim();
+        const taxaAnual = Math.max(0, Number(item.taxaAnual || 0));
         const observacoes = (item.observacoes || "").trim();
 
-        const valorTotal = Math.max(0, Number(item.valorTotal || 0));
-        const entradaValor = Math.max(0, Number(item.entradaValor || 0));
-        const entradaParcelas = Math.max(1, Math.floor(Number(item.entradaParcelas || 1)));
-        const entradaParcela = entradaParcelas > 0 ? entradaValor / entradaParcelas : 0;
-
-        const obraParcelas = Math.max(0, Math.floor(Number(item.obraParcelas || 0)));
-        const obraParcelaValor = Math.max(0, Number(item.obraParcelaValor || 0));
-        const obraTotal = obraParcelas * obraParcelaValor;
-
-        const reforcosQuantidade = Math.max(0, Math.floor(Number(item.reforcosQuantidade || 0)));
-        const reforcosValor = Math.max(0, Number(item.reforcosValor || 0));
-        const reforcosTotal = reforcosQuantidade * reforcosValor;
-
-        const chavesValor = Math.max(0, Number(item.chavesValor || 0));
-        const financiamentoValor = Math.max(0, Number(item.financiamentoValor || 0));
-
-        const fluxoCliente = entradaValor + obraTotal + reforcosTotal + chavesValor;
-        const fluxoTotal = fluxoCliente + financiamentoValor;
-
-        const cards = [];
-        if (entradaValor > 0) {
-          cards.push({
-            key: `${id}-entrada`,
-            label: "Entrada",
-            valor: entradaValor,
-            percentual: fluxoCliente > 0 ? (entradaValor / fluxoCliente) * 100 : 0,
-            contexto: "fluxo do cliente",
-            detalhe:
-              entradaParcelas > 1
-                ? `${entradaParcelas}x de ${brl(entradaParcela)}`
-                : entradaParcelas === 1
-                ? "Pagamento no ato"
-                : null,
-          });
-        }
-
-        if (obraTotal > 0) {
-          cards.push({
-            key: `${id}-obra`,
-            label: "Durante a obra",
-            valor: obraTotal,
-            percentual: fluxoCliente > 0 ? (obraTotal / fluxoCliente) * 100 : 0,
-            contexto: "fluxo do cliente",
-            detalhe: obraParcelas > 0 ? `${obraParcelas}x de ${brl(obraParcelaValor)}` : null,
-          });
-        }
-
-        if (reforcosTotal > 0) {
-          cards.push({
-            key: `${id}-reforcos`,
-            label: "Reforços",
-            valor: reforcosTotal,
-            percentual: fluxoCliente > 0 ? (reforcosTotal / fluxoCliente) * 100 : 0,
-            contexto: "fluxo do cliente",
-            detalhe:
-              reforcosQuantidade > 0
-                ? `${reforcosQuantidade}x de ${brl(reforcosValor)}`
-                : null,
-          });
-        }
-
-        if (chavesValor > 0) {
-          cards.push({
-            key: `${id}-chaves`,
-            label: "Chaves",
-            valor: chavesValor,
-            percentual: fluxoCliente > 0 ? (chavesValor / fluxoCliente) * 100 : 0,
-            contexto: "fluxo do cliente",
-            detalhe: "Quitação na entrega",
-          });
-        }
-
-        if (financiamentoValor > 0) {
-          cards.push({
-            key: `${id}-financiamento`,
-            label: "Financiamento (banco)",
-            valor: financiamentoValor,
-            percentual: fluxoTotal > 0 ? (financiamentoValor / fluxoTotal) * 100 : 0,
-            contexto: "total do cliente + banco",
-            destaque: true,
-            detalhe: "Valor financiado fora do fluxo do cliente",
-          });
-        }
-
-        const categorias = {
-          entrada: {
-            valor: entradaValor,
-            percentualCliente: fluxoCliente > 0 ? (entradaValor / fluxoCliente) * 100 : 0,
-            detalhe: cards.find((c) => c.key === `${id}-entrada`)?.detalhe || null,
-          },
-          obra: {
-            valor: obraTotal,
-            percentualCliente: fluxoCliente > 0 ? (obraTotal / fluxoCliente) * 100 : 0,
-            detalhe: obraParcelas > 0 ? `${obraParcelas}x de ${brl(obraParcelaValor)}` : null,
-          },
-          reforcos: {
-            valor: reforcosTotal,
-            percentualCliente: fluxoCliente > 0 ? (reforcosTotal / fluxoCliente) * 100 : 0,
-            detalhe:
-              reforcosQuantidade > 0
-                ? `${reforcosQuantidade}x de ${brl(reforcosValor)}`
-                : null,
-          },
-          chaves: {
-            valor: chavesValor,
-            percentualCliente: fluxoCliente > 0 ? (chavesValor / fluxoCliente) * 100 : 0,
-            detalhe: chavesValor > 0 ? "Quitação na entrega" : null,
-          },
-          financiamento: {
-            valor: financiamentoValor,
-            percentualTotal: fluxoTotal > 0 ? (financiamentoValor / fluxoTotal) * 100 : 0,
-            detalhe: financiamentoValor > 0 ? "Banco parceiro" : null,
-          },
-        };
-
-        const possuiDadosRelevantes =
-          nome ||
-          empresa ||
-          fluxoCliente > 0 ||
-          financiamentoValor > 0 ||
-          valorTotal > 0 ||
-          observacoes;
-
-        if (!possuiDadosRelevantes) {
+        if (!nome && aporteTotal <= 0) {
           return null;
         }
 
+        const taxaMensal = Math.pow(1 + taxaAnual / 100, 1 / 12) - 1;
+        let montanteProjetado = 0;
+
+        if (aporteTotal > 0 && scheduleCliente.length > 0) {
+          scheduleCliente.forEach((parcela) => {
+            const offset = Math.max(0, Number(parcela.offset || 0));
+            const mesesRestantes = Math.max(0, horizonteMeses - offset);
+            const fator = Math.pow(1 + taxaMensal, mesesRestantes);
+            montanteProjetado += parcela.valor * fator;
+          });
+        }
+
+        const ganho = montanteProjetado - aporteTotal;
+        const rentabilidade = aporteTotal > 0 ? (ganho / aporteTotal) * 100 : 0;
+
         return {
           id,
-          nome,
-          empresa,
+          nome: nome || `Investimento ${index + 1}`,
+          taxaAnual,
           observacoes,
-          valorTotal,
-          entradaParcelas,
-          obraParcelas,
-          obraParcelaValor,
-          reforcosQuantidade,
-          reforcosValor,
-          fluxoCliente,
-          fluxoTotal,
-          cards,
-          categorias,
           highlight: Boolean(item.highlight),
+          aporteTotal,
+          montanteProjetado: montanteProjetado || aporteTotal,
+          ganho: ganho || 0,
+          rentabilidade,
         };
       })
       .filter(Boolean);
-  }, [data.comparativos]);
+  }, [data.investimentos, horizonteMeses, scheduleCliente, valores.totalFluxoSemFin]);
 
-  const comparativoTabela = useMemo(() => {
-    const propostaPrincipal = {
-      id: "principal",
-      titulo: data.company || "Proposta Alvo",
-      subtitulo: data.empreendimento || null,
-      entradaValor: valores.totalEntrada,
-      entradaPercentCliente: totalFluxoCliente > 0 ? (valores.totalEntrada / totalFluxoCliente) * 100 : 0,
-      entradaDetalhe:
-        valores.entradaParcelas > 1
-          ? `${valores.entradaParcelas}x de ${brl(valores.entradaParcela)}`
-          : valores.entradaParcelas === 1
-          ? "Pagamento no ato"
-          : null,
-      obraValor: valores.totalObra,
-      obraDetalhe:
-        valores.duranteObraParcelas > 0
-          ? `${valores.duranteObraParcelas}x de ${brl(valores.duranteObraParcela)}`
-          : null,
-      reforcosValor: valores.totalReforcos,
-      reforcosDetalhe:
-        valores.qRef > 0
-          ? `${valores.qRef}x de ${brl(valores.vRef)}${valores.freqRef ? ` a cada ${valores.freqRef}m` : ""}`
-          : null,
-      chavesValor: totalChavesCliente,
-      financiamentoValor: valores.totalFinanciado,
-      fluxoCliente: valores.totalFluxoSemFin,
-      fluxoTotal: valores.totalJaSomado,
-      highlight: true,
+  const investimentosResumo = useMemo(() => {
+    if (!investimentosDetalhados.length) return null;
+    const ordenado = [...investimentosDetalhados].sort((a, b) => b.montanteProjetado - a.montanteProjetado);
+    return {
+      melhor: ordenado[0],
+      aporte: valores.totalFluxoSemFin,
     };
-
-    const outros = comparativosDetalhados.map((item, index) => ({
-      id: item.id,
-      titulo: item.nome || `Concorrente ${index + 1}`,
-      subtitulo: item.empresa || null,
-      entradaValor: item.categorias.entrada.valor,
-      entradaPercentCliente: item.categorias.entrada.percentualCliente,
-      entradaDetalhe: item.categorias.entrada.detalhe,
-      obraValor: item.categorias.obra.valor,
-      obraDetalhe: item.categorias.obra.detalhe,
-      reforcosValor: item.categorias.reforcos.valor,
-      reforcosDetalhe: item.categorias.reforcos.detalhe,
-      chavesValor: item.categorias.chaves.valor,
-      financiamentoValor: item.categorias.financiamento.valor,
-      fluxoCliente: item.fluxoCliente,
-      fluxoTotal: item.fluxoTotal,
-      highlight: item.highlight,
-    }));
-
-    return [propostaPrincipal, ...outros];
-  }, [
-    comparativosDetalhados,
-    data.company,
-    data.empreendimento,
-    totalChavesCliente,
-    totalFluxoCliente,
-    valores.duranteObraParcelas,
-    valores.duranteObraParcela,
-    valores.entradaParcelas,
-    valores.entradaParcela,
-    valores.freqRef,
-    valores.qRef,
-    valores.totalEntrada,
-    valores.totalFinanciado,
-    valores.totalFluxoSemFin,
-    valores.totalJaSomado,
-    valores.totalObra,
-    valores.totalReforcos,
-    valores.vRef,
-  ]);
-
-  const comparativoLinhas = useMemo(
-    () => [
-      {
-        key: "entrada",
-        label: "Entrada",
-        get: (proposta) => ({ valor: brl(proposta.entradaValor), detalhe: proposta.entradaDetalhe }),
-      },
-      {
-        key: "entradaPercent",
-        label: "% da entrada (fluxo do cliente)",
-        get: (proposta) => ({ valor: pct(proposta.entradaPercentCliente), detalhe: null }),
-      },
-      {
-        key: "obra",
-        label: "Durante a obra",
-        get: (proposta) => ({ valor: brl(proposta.obraValor), detalhe: proposta.obraDetalhe }),
-      },
-      {
-        key: "reforcos",
-        label: "Reforços / Balões",
-        get: (proposta) => ({ valor: brl(proposta.reforcosValor), detalhe: proposta.reforcosDetalhe }),
-      },
-      {
-        key: "chaves",
-        label: "Chaves",
-        get: (proposta) => ({ valor: brl(proposta.chavesValor), detalhe: null }),
-      },
-      {
-        key: "financiamento",
-        label: "Financiamento (banco)",
-        get: (proposta) => ({ valor: brl(proposta.financiamentoValor), detalhe: null }),
-      },
-      {
-        key: "fluxoCliente",
-        label: "Fluxo do cliente",
-        get: (proposta) => ({ valor: brl(proposta.fluxoCliente), detalhe: null }),
-      },
-      {
-        key: "fluxoTotal",
-        label: "Pagamento total",
-        get: (proposta) => ({ valor: brl(proposta.fluxoTotal), detalhe: null }),
-      },
-    ],
-    []
-  );
+  }, [investimentosDetalhados, valores.totalFluxoSemFin]);
 
   const saldoTitle = valores.saldoACompor > 0.5
     ? "Saldo a compor"
     : valores.saldoACompor < -0.5
     ? "Excedente (sobra)"
     : "Saldo em aberto";
-  const pagamentoTotalTitulo = valores.totalFinanciado > 0 ? "Pagamento total (cliente + banco)" : null;
+  const pagamentoTotalTitulo =
+    valores.totalFinanciado > 0 || valores.totalShortStay > 0
+      ? "Pagamento total (cliente + parceiros)"
+      : null;
   const pagamentoCliente = valores.valorInvestidoReal;
   const pagamentoBanco = valores.totalFinanciado;
+  const pagamentoShortStay = valores.totalShortStay;
   const pagamentoDetalhe = (
     <>
       <span className="block">Pagamento total: {brl(valores.totalJaSomado)}</span>
       <span className="block">
         Pagamento do cliente: {brl(pagamentoCliente)}
         {pagamentoBanco > 0 ? <span> · Banco: {brl(pagamentoBanco)}</span> : null}
+        {pagamentoShortStay > 0 ? <span> · Short stay: {brl(pagamentoShortStay)}</span> : null}
       </span>
     </>
   );
@@ -925,8 +736,10 @@ export default function App() {
   const resumoKPIs = [
     { title: "Valor do imóvel", value: brl(valores.total) },
     { title: "Investimento real (cliente)", value: brl(valores.valorInvestidoReal) },
-    { title: "Pagamento do cliente (sem financiamento)", value: brl(valores.totalFluxoSemFin) },
-    valores.totalPosChaves ? { title: "Pós-chaves", value: brl(valores.totalPosChaves) } : null,
+    { title: "Pagamento do cliente", value: brl(valores.totalFluxoSemFin) },
+    valores.totalShortStay
+      ? { title: "Coberto pelo short stay", value: brl(valores.totalShortStay) }
+      : null,
     valores.totalFinanciado ? { title: "Financiado (banco)", value: brl(valores.totalFinanciado) } : null,
     pagamentoTotalTitulo ? { title: pagamentoTotalTitulo, value: brl(valores.totalJaSomado) } : null,
     {
@@ -1280,63 +1093,83 @@ export default function App() {
                 <FluxoResumoCards items={resumoFluxo} />
                 <div className="mt-3 text-xs text-gray-600 space-y-1">
                   <div>
-                    Pagamento do cliente (sem financiamento): <strong>{brl(totalFluxoCliente)}</strong>
+                    Pagamento do cliente: <strong>{brl(totalFluxoCliente)}</strong>
                   </div>
+                  {totalShortStay > 0 && (
+                    <div>
+                      Pós-obra coberta pelo short stay: <strong>{brl(totalShortStay)}</strong>
+                    </div>
+                  )}
+                  {valores.totalFinanciado > 0 && (
+                    <div>
+                      Financiamento (banco): <strong>{brl(valores.totalFinanciado)}</strong>
+                    </div>
+                  )}
                   <div>
-                    Pagamento total (cliente + banco): <strong>{brl(totalFluxoGeral)}</strong>
+                    Pagamento total (cliente + parceiros): <strong>{brl(totalFluxoGeral)}</strong>
                   </div>
                 </div>
               </div>
-              {comparativosDetalhados.length > 0 && (
+              {investimentosDetalhados.length > 0 && (
                 <div className="mt-4 rounded-xl bg-white border p-3 space-y-3">
                   <div className="flex items-center justify-between flex-wrap gap-2">
-                    <p className="font-semibold">Comparativo com o mercado</p>
-                    <span className="text-[11px] text-gray-500">
-                      Dados preenchidos pelo corretor com propostas concorrentes
-                    </span>
+                    <p className="font-semibold">Comparativo com outros investimentos</p>
+                    {investimentosResumo ? (
+                      <span className="text-[11px] text-gray-500">
+                        Mesmo fluxo aplicado em {investimentosResumo.melhor.nome} pode projetar {brl(
+                          investimentosResumo.melhor.montanteProjetado
+                        )}
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-gray-500">
+                        Ajuste as taxas anuais para analisar o retorno de alternativas como CDI.
+                      </span>
+                    )}
                   </div>
-                  {comparativosDetalhados.map((item, index) => (
-                    <div
-                      key={item.id}
-                      className={`rounded-2xl border p-4 space-y-3 shadow-sm ${
-                        item.highlight
-                          ? "bg-emerald-50/80 border-emerald-200"
-                          : "bg-slate-50/80 border-slate-200"
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <h6 className="text-sm font-semibold text-slate-700">
-                            {item.nome || `Proposta concorrente ${index + 1}`}
-                          </h6>
-                          {item.empresa ? (
-                            <p className="text-xs text-gray-500">{item.empresa}</p>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {investimentosDetalhados.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`rounded-2xl border p-4 space-y-3 shadow-sm ${
+                          item.highlight
+                            ? "bg-emerald-50/80 border-emerald-200"
+                            : "bg-slate-50/80 border-slate-200"
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h6 className="text-sm font-semibold text-slate-700">{item.nome}</h6>
+                            <p className="text-xs text-gray-500">
+                              Taxa anual projetada: <strong>{pct(item.taxaAnual)}</strong>
+                            </p>
+                          </div>
+                          {item.observacoes ? (
+                            <p className="text-xs text-right text-gray-500 max-w-[160px]">
+                              {item.observacoes}
+                            </p>
                           ) : null}
                         </div>
-                        <div className="text-right text-sm">
-                          <div className="font-semibold text-slate-700">{brl(item.valorTotal)}</div>
-                          <div className="text-[11px] text-gray-500">Valor do imóvel</div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div className="rounded-lg bg-white/70 border border-white/80 p-2">
+                            <p className="text-[11px] uppercase tracking-wide text-gray-500">Aporte total</p>
+                            <p className="text-sm font-semibold text-slate-700">{brl(item.aporteTotal)}</p>
+                          </div>
+                          <div className="rounded-lg bg-white/70 border border-white/80 p-2">
+                            <p className="text-[11px] uppercase tracking-wide text-gray-500">Montante projetado</p>
+                            <p className="text-sm font-semibold text-slate-700">{brl(item.montanteProjetado)}</p>
+                          </div>
+                          <div className="rounded-lg bg-white/70 border border-white/80 p-2">
+                            <p className="text-[11px] uppercase tracking-wide text-gray-500">Ganho vs aporte</p>
+                            <p className="text-sm font-semibold text-emerald-700">{brl(item.ganho)}</p>
+                          </div>
+                          <div className="rounded-lg bg-white/70 border border-white/80 p-2">
+                            <p className="text-[11px] uppercase tracking-wide text-gray-500">Rentabilidade</p>
+                            <p className="text-sm font-semibold text-emerald-700">{pct(item.rentabilidade)}</p>
+                          </div>
                         </div>
                       </div>
-                      <FluxoResumoCards
-                        items={item.cards}
-                        columns="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2"
-                      />
-                      <div className="text-xs text-gray-600 flex flex-wrap items-center justify-between gap-2">
-                        <span>
-                          Fluxo do cliente: <strong>{brl(item.fluxoCliente)}</strong>
-                        </span>
-                        <span>
-                          Pagamento total: <strong>{brl(item.fluxoTotal)}</strong>
-                        </span>
-                      </div>
-                      {item.observacoes ? (
-                        <p className="text-[11px] text-gray-500 border-t border-dashed border-slate-200 pt-2">
-                          {item.observacoes}
-                        </p>
-                      ) : null}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -1371,32 +1204,31 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="6) Comparativos de mercado">
+          <Card title="6) Comparativos de investimentos">
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
-                Registre aqui as outras propostas comerciais pesquisadas para apresentar um comparativo claro ao cliente.
-                As informações aparecem automaticamente no resultado e no PDF com os mesmos indicadores de fluxo.
+                Projete quanto o mesmo fluxo de pagamento renderia em outras alternativas financeiras (ex.: CDI, Tesouro,
+                fundos). Informe a taxa anual estimada e um comentário para contextualizar a análise.
               </p>
-              {comparativosForm.length === 0 ? (
+              {investimentosForm.length === 0 ? (
                 <p className="text-xs text-gray-500">
-                  Clique em <strong>Adicionar comparativo</strong> para lançar uma proposta concorrente (até quatro opções).
+                  Clique em <strong>Adicionar comparativo</strong> para incluir um investimento de referência.
                 </p>
               ) : null}
-              {comparativosForm.map((item, index) => (
-                <div key={item.id || index} className="rounded-2xl border border-slate-200 bg-white/80 shadow-sm p-4 space-y-4">
+              {investimentosForm.map((item, index) => (
+                <div
+                  key={item.id || index}
+                  className="rounded-2xl border border-slate-200 bg-white/80 shadow-sm p-4 space-y-4"
+                >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <h5 className="text-sm font-semibold text-slate-700">
-                        Proposta comparativa {index + 1}
-                      </h5>
-                      {item.nome ? (
-                        <p className="text-xs text-gray-500">{item.nome}</p>
-                      ) : null}
+                      <h5 className="text-sm font-semibold text-slate-700">Comparativo {index + 1}</h5>
+                      {item.nome ? <p className="text-xs text-gray-500">{item.nome}</p> : null}
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        onClick={() => updateComparativo(item.id, "highlight", !item.highlight)}
+                        onClick={() => updateInvestimento(item.id, "highlight", !item.highlight)}
                         className={`px-3 py-1.5 rounded-full text-xs font-medium border transition ${
                           item.highlight
                             ? "border-emerald-300 bg-emerald-50 text-emerald-700"
@@ -1407,7 +1239,7 @@ export default function App() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => removeComparativo(item.id)}
+                        onClick={() => removeInvestimento(item.id)}
                         className="px-3 py-1.5 rounded-full border border-red-200 text-xs font-semibold text-red-600 hover:bg-red-50 transition"
                       >
                         Remover
@@ -1416,126 +1248,38 @@ export default function App() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <Input
-                      label="Título da proposta"
+                      label="Nome do investimento"
                       value={item.nome || ""}
-                      onChange={(event) => updateComparativo(item.id, "nome", event.target.value)}
-                      placeholder="Residencial Horizonte"
+                      onChange={(event) => updateInvestimento(item.id, "nome", event.target.value)}
+                      placeholder="CDI (12m)"
                     />
                     <Input
-                      label="Empresa"
-                      value={item.empresa || ""}
-                      onChange={(event) => updateComparativo(item.id, "empresa", event.target.value)}
-                      placeholder="Construtora concorrente"
-                    />
-                    <Input
-                      label="Valor total do imóvel"
-                      currency
-                      value={item.valorTotal || 0}
-                      onChange={(event) => updateComparativo(item.id, "valorTotal", currencyToNumber(event.target.value))}
-                    />
-                    <Input
-                      label="Entrada total"
-                      currency
-                      value={item.entradaValor || 0}
-                      onChange={(event) => updateComparativo(item.id, "entradaValor", currencyToNumber(event.target.value))}
+                      label="Taxa anual projetada (%)"
+                      value={item.taxaAnual ?? ""}
+                      onChange={(event) =>
+                        updateInvestimento(item.id, "taxaAnual", Number((event.target.value || "").replace(/,/g, ".")))
+                      }
+                      placeholder="13.15"
                     />
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-600">Parcelas de entrada</label>
-                      <input
-                        type="number"
-                        min={1}
-                        value={item.entradaParcelas ?? 1}
-                        onChange={(event) =>
-                          updateComparativo(
-                            item.id,
-                            "entradaParcelas",
-                            Math.max(1, Math.floor(Number(event.target.value || 1)))
-                          )
-                        }
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-600">Parcelas durante a obra</label>
-                      <input
-                        type="number"
-                        min={0}
-                        value={item.obraParcelas ?? 0}
-                        onChange={(event) =>
-                          updateComparativo(
-                            item.id,
-                            "obraParcelas",
-                            Math.max(0, Math.floor(Number(event.target.value || 0)))
-                          )
-                        }
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                      />
-                    </div>
-                    <Input
-                      label="Valor de cada parcela da obra"
-                      currency
-                      value={item.obraParcelaValor || 0}
-                      onChange={(event) => updateComparativo(item.id, "obraParcelaValor", currencyToNumber(event.target.value))}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-slate-600">Observações</label>
+                    <textarea
+                      value={item.observacoes || ""}
+                      onChange={(event) => updateInvestimento(item.id, "observacoes", event.target.value)}
+                      rows={3}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+                      placeholder="Fonte, premissas, risco ou horizonte considerado"
                     />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Input
-                      label="Valor de cada reforço / balão"
-                      currency
-                      value={item.reforcosValor || 0}
-                      onChange={(event) => updateComparativo(item.id, "reforcosValor", currencyToNumber(event.target.value))}
-                    />
-                    <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-600">Quantidade de reforços</label>
-                      <input
-                        type="number"
-                        min={0}
-                        value={item.reforcosQuantidade ?? 0}
-                        onChange={(event) =>
-                          updateComparativo(
-                            item.id,
-                            "reforcosQuantidade",
-                            Math.max(0, Math.floor(Number(event.target.value || 0)))
-                          )
-                        }
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                      />
-                    </div>
-                    <Input
-                      label="Valor das chaves"
-                      currency
-                      value={item.chavesValor || 0}
-                      onChange={(event) => updateComparativo(item.id, "chavesValor", currencyToNumber(event.target.value))}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <Input
-                      label="Financiamento (banco)"
-                      currency
-                      value={item.financiamentoValor || 0}
-                      onChange={(event) => updateComparativo(item.id, "financiamentoValor", currencyToNumber(event.target.value))}
-                    />
-                    <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-slate-600">Observações</label>
-                      <textarea
-                        value={item.observacoes || ""}
-                        onChange={(event) => updateComparativo(item.id, "observacoes", event.target.value)}
-                        rows={3}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm focus:border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-                        placeholder="Itens inclusos, observações comerciais, prazos de entrega..."
-                      />
-                    </div>
                   </div>
                 </div>
               ))}
               <div className="flex justify-end">
                 <button
                   type="button"
-                  onClick={addComparativo}
+                  onClick={addInvestimento}
                   className="px-4 py-2 rounded-2xl border border-emerald-300 bg-emerald-50 text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition disabled:opacity-50"
-                  disabled={comparativosForm.length >= 4}
+                  disabled={investimentosForm.length >= 4}
                 >
                   Adicionar comparativo
                 </button>
@@ -1611,8 +1355,20 @@ export default function App() {
                       <span>Pagamento do cliente</span>
                       <span className="font-semibold">{brl(totalFluxoCliente)}</span>
                     </div>
+                    {totalShortStay > 0 && (
+                      <div className="flex justify-between">
+                        <span>Short stay (pós-obra)</span>
+                        <span className="font-semibold">{brl(totalShortStay)}</span>
+                      </div>
+                    )}
+                    {valores.totalFinanciado > 0 && (
+                      <div className="flex justify-between">
+                        <span>Financiamento (banco)</span>
+                        <span className="font-semibold">{brl(valores.totalFinanciado)}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
-                      <span>Pagamento total (cliente + banco)</span>
+                      <span>Pagamento total (cliente + parceiros)</span>
                       <span className="font-semibold">{brl(totalFluxoGeral)}</span>
                     </div>
                   </div>
@@ -1630,6 +1386,12 @@ export default function App() {
                     <div className="flex justify-between">
                       <span>Parcelas pós-chaves</span>
                       <strong>{brl(valores.totalPosChaves)}</strong>
+                    </div>
+                  )}
+                  {totalShortStay > 0 && (
+                    <div className="flex justify-between">
+                      <span>Short stay (pós-obra)</span>
+                      <strong>{brl(totalShortStay)}</strong>
                     </div>
                   )}
                   {valores.totalFinanciado > 0 && (
@@ -1761,42 +1523,30 @@ export default function App() {
                   </div>
                 </div>
               </div>
-              {comparativoTabela.length > 1 && (
+              {investimentosDetalhados.length > 0 && (
                 <div className="rounded-2xl border bg-white p-4 shadow-sm space-y-3">
-                  <h4 className="text-sm font-semibold text-slate-700">Quadro comparativo do fluxo</h4>
+                  <h4 className="text-sm font-semibold text-slate-700">Mesmo fluxo em investimentos alternativos</h4>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs">
                       <thead className="bg-slate-100 text-slate-600 uppercase tracking-wide">
                         <tr>
-                          <th className="px-3 py-2 text-left font-semibold">Indicador</th>
-                          {comparativoTabela.map((proposta) => (
-                            <th key={proposta.id} className="px-3 py-2 text-left font-semibold">
-                              <div className="text-slate-700">{proposta.titulo}</div>
-                              {proposta.subtitulo ? (
-                                <div className="text-[10px] text-gray-500 normal-case">{proposta.subtitulo}</div>
-                              ) : null}
-                            </th>
-                          ))}
+                          <th className="px-3 py-2 text-left font-semibold">Investimento</th>
+                          <th className="px-3 py-2 text-left font-semibold">Taxa anual</th>
+                          <th className="px-3 py-2 text-left font-semibold">Aporte total</th>
+                          <th className="px-3 py-2 text-left font-semibold">Montante projetado</th>
+                          <th className="px-3 py-2 text-left font-semibold">Ganho</th>
+                          <th className="px-3 py-2 text-left font-semibold">Rentabilidade</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {comparativoLinhas.map((linha) => (
-                          <tr key={linha.key} className="bg-white/70">
-                            <td className="px-3 py-2 font-medium text-slate-600 align-top">{linha.label}</td>
-                            {comparativoTabela.map((proposta) => {
-                              const conteudo = linha.get(proposta);
-                              return (
-                                <td
-                                  key={`${linha.key}-${proposta.id}`}
-                                  className="px-3 py-2 text-right align-top"
-                                >
-                                  <div className="font-semibold text-slate-700">{conteudo.valor}</div>
-                                  {conteudo.detalhe ? (
-                                    <div className="text-[10px] text-gray-500">{conteudo.detalhe}</div>
-                                  ) : null}
-                                </td>
-                              );
-                            })}
+                        {investimentosDetalhados.map((item) => (
+                          <tr key={item.id} className="bg-white/70">
+                            <td className="px-3 py-2 font-medium text-slate-600">{item.nome}</td>
+                            <td className="px-3 py-2">{pct(item.taxaAnual)}</td>
+                            <td className="px-3 py-2">{brl(item.aporteTotal)}</td>
+                            <td className="px-3 py-2">{brl(item.montanteProjetado)}</td>
+                            <td className="px-3 py-2 text-emerald-700 font-semibold">{brl(item.ganho)}</td>
+                            <td className="px-3 py-2 text-emerald-700 font-semibold">{pct(item.rentabilidade)}</td>
                           </tr>
                         ))}
                       </tbody>
