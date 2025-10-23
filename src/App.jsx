@@ -20,8 +20,8 @@ const currencyToNumber = (s) => {
 /********************
  * Logo
  ********************/
-const AlvoLogo = ({ size = 48 }) => (
-  <img src={alvoLogo} alt="Alvo BR" style={{ height: size, width: "auto" }} />
+const AlvoLogo = ({ size = 48, source }) => (
+  <img src={source || alvoLogo} alt="Alvo BR" style={{ height: size, width: "auto" }} />
 );
 
 /********************
@@ -84,6 +84,7 @@ const sample = {
   ocupacao: 70,
   custosOperacionais: 30,
   validade: new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10),
+  logoPersonalizado: null,
   arquivoOriginal: null,
   imagem1: null,
   imagem2: null,
@@ -140,9 +141,8 @@ export default function App() {
     const totalAteChaves = entradaValor + duranteObraTotal + reforcosTotal;
 
     const valorInvestidoReal = totalFluxoSemFin;
-    const totalCoberto = valorInvestidoReal + totalFinanciado;
-    const saldoACompor = total - totalCoberto;
-    const totalJaSomado = totalCoberto;
+    const pagamentoTotal = valorInvestidoReal + totalFinanciado;
+    const saldoACompor = total - pagamentoTotal;
 
     const precoM2 = Number(data.area) > 0 ? total / Number(data.area) : 0;
 
@@ -223,8 +223,7 @@ export default function App() {
       reforcosTotal,
       valorInvestidoReal,
       saldoACompor,
-      totalCoberto,
-      totalJaSomado,
+      pagamentoTotal,
       precoM2,
       qRef,
       vRef,
@@ -326,13 +325,22 @@ export default function App() {
     await ensurePdfLibs();
     const { jsPDF } = window.jspdf;
     const node = resultRef.current;
-    const originalWidth = node.style.width;
-    node.style.width = "794px";
+    if (!node) return;
 
-    const canvas = await window.html2canvas(node, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
-    const pdf = new jsPDF("p", "mm", "a4");
+    const originalWidth = node.style.width;
+    const mmToPx = (mm) => (mm / 25.4) * 96;
+    const pdf = new jsPDF("l", "mm", "a4");
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
+    const targetWidth = mmToPx(pageWidth);
+    node.style.width = `${targetWidth}px`;
+
+    const canvas = await window.html2canvas(node, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
+      windowWidth: targetWidth,
+    });
 
     const imgWidth = pageWidth;
     const pageHeightPx = (canvas.width * pageHeight) / pageWidth;
@@ -375,6 +383,8 @@ export default function App() {
   const clearAll = () => setData({});
 
   const imagensGaleria = [data.imagem1, data.imagem2, data.imagem3, data.imagem4].filter(Boolean);
+  const logoPrincipal = data.logoPersonalizado?.dataUrl || alvoLogo;
+  const exibeRecursosCliente = Number(data.recursosCliente || 0) > 0;
   const resumoFluxo = [
     { label: "Entrada", valor: valores.totalEntrada },
     { label: "Durante a obra", valor: valores.totalObra },
@@ -388,17 +398,17 @@ export default function App() {
 
   const saldoApproxZero = Math.abs(valores.saldoACompor) < 0.5;
   const saldoTitle = saldoApproxZero
-    ? "Saldo quitado"
+    ? "Saldo em aberto"
     : valores.saldoACompor > 0
     ? "Saldo a compor"
     : "Excedente (sobra)";
-  const totalCobertoTitle = valores.totalFinanciado > 0 ? "Total coberto (cliente + banco)" : null;
-  const coberturaCliente = valores.valorInvestidoReal;
-  const coberturaBanco = valores.totalFinanciado;
-  const coberturaDetalhe =
-    coberturaBanco > 0
-      ? `Cliente: ${brl(coberturaCliente)} · Banco: ${brl(coberturaBanco)}`
-      : `Cliente: ${brl(coberturaCliente)}`;
+  const pagamentoTotalTitle = valores.totalFinanciado > 0 ? "Pagamento total (cliente + banco)" : null;
+  const pagamentoCliente = valores.valorInvestidoReal;
+  const pagamentoBanco = valores.totalFinanciado;
+  const pagamentoDetalhe =
+    pagamentoBanco > 0
+      ? `Cliente: ${brl(pagamentoCliente)} · Banco: ${brl(pagamentoBanco)}`
+      : `Cliente: ${brl(pagamentoCliente)}`;
 
   const resumoKPIs = [
     { title: "Valor do imóvel", value: brl(valores.total) },
@@ -406,12 +416,12 @@ export default function App() {
     { title: "Fluxo total (cliente)", value: brl(valores.totalFluxoSemFin) },
     valores.totalPosChaves ? { title: "Pós-chaves", value: brl(valores.totalPosChaves) } : null,
     valores.totalFinanciado ? { title: "Financiado (banco)", value: brl(valores.totalFinanciado) } : null,
-    totalCobertoTitle ? { title: totalCobertoTitle, value: brl(valores.totalJaSomado) } : null,
+    pagamentoTotalTitle ? { title: pagamentoTotalTitle, value: brl(valores.pagamentoTotal) } : null,
     {
       title: saldoTitle,
       value: brl(valores.saldoACompor),
       highlight: true,
-      subValue: coberturaDetalhe,
+      subValue: pagamentoDetalhe,
     },
   ].filter(Boolean);
 
@@ -419,7 +429,7 @@ export default function App() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
       <header className="sticky top-0 z-40 backdrop-blur border-b bg-white/80">
         <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-3">
-          <AlvoLogo size={36} />
+          <AlvoLogo size={36} source={logoPrincipal} />
           <div className="flex-1">
             <h1 className="text-xl font-semibold">Alvo Propostas</h1>
             <p className="text-xs text-gray-500">
@@ -704,7 +714,7 @@ export default function App() {
                     <strong className="text-emerald-700">{brl(valores.saldoACompor)}</strong>
                   </div>
                   <div className="text-[11px] text-emerald-700/80 mt-1">
-                    Cobertura atual: {brl(valores.totalJaSomado)}
+                    Pagamento total: {brl(valores.pagamentoTotal)}
                   </div>
                 </div>
               </div>
@@ -728,7 +738,7 @@ export default function App() {
                   Fluxo total (cliente): <strong>{brl(valores.totalFluxoSemFin)}</strong>
                 </div>
                 <div className="text-xs text-gray-600">
-                  Cobertura atual (cliente + banco): <strong>{brl(valores.totalJaSomado)}</strong>
+                  Pagamento total (cliente + banco): <strong>{brl(valores.pagamentoTotal)}</strong>
                 </div>
               </div>
             </div>
@@ -736,6 +746,13 @@ export default function App() {
 
           <Card title="5) Materiais e mídias">
             <div className="space-y-4">
+              <FileInput
+                label="Logomarca da proposta"
+                file={data.logoPersonalizado}
+                accept="image/*"
+                helper="Envie a logomarca oficial para substituir o símbolo padrão da Alvo."
+                onFileChange={setFile("logoPersonalizado")}
+              />
               <FileInput
                 label="Arquivo original do projeto"
                 file={data.arquivoOriginal}
@@ -768,7 +785,7 @@ export default function App() {
           <div ref={resultRef} className="paper mx-auto space-y-10">
             <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-8">
               <div className="flex flex-wrap items-start gap-6">
-                <AlvoLogo size={72} />
+                <AlvoLogo size={72} source={logoPrincipal} />
                 <div className="flex-1">
                   <h2 className="text-2xl font-semibold text-slate-800">Proposta de Investimento Imobiliário</h2>
                   <p className="text-sm text-gray-500 mt-1">
@@ -789,7 +806,7 @@ export default function App() {
                   <DataRow k="Nome" v={data.cliente} />
                   <DataRow k="Telefone" v={data.clientePhone} />
                   <DataRow k="E-mail" v={data.clienteEmail} />
-                  <DataRow k="Recursos do cliente" v={brl(data.recursosCliente)} />
+                  {exibeRecursosCliente && <DataRow k="Recursos do cliente" v={brl(data.recursosCliente)} />}
                 </div>
                 <div className="rounded-2xl border bg-slate-50 p-4">
                   <h3 className="text-sm font-semibold text-slate-600 mb-3">Empreendimento</h3>
@@ -841,8 +858,8 @@ export default function App() {
                     <span className="font-semibold">{brl(valores.totalFluxoSemFin)}</span>
                   </div>
                   <div className="text-xs text-gray-500 flex justify-between">
-                    <span>Cobertura atual</span>
-                    <span className="font-medium">{brl(valores.totalJaSomado)}</span>
+                    <span>Pagamento total</span>
+                    <span className="font-medium">{brl(valores.pagamentoTotal)}</span>
                   </div>
                 </div>
                 <div className="rounded-2xl border bg-slate-50 p-4 text-sm space-y-2">
@@ -868,8 +885,8 @@ export default function App() {
                   )}
                   {valores.totalFinanciado > 0 && (
                     <div className="flex justify-between">
-                      <span>Total coberto</span>
-                      <strong>{brl(valores.totalJaSomado)}</strong>
+                      <span>Pagamento total</span>
+                      <strong>{brl(valores.pagamentoTotal)}</strong>
                     </div>
                   )}
                   <div className="flex justify-between text-emerald-700 font-semibold">
@@ -877,8 +894,8 @@ export default function App() {
                     <span>{brl(valores.saldoACompor)}</span>
                   </div>
                   <div className="flex justify-between text-[11px] text-gray-500">
-                    <span>Cobertura atual</span>
-                    <span>{brl(valores.totalJaSomado)}</span>
+                    <span>Pagamento total</span>
+                    <span>{brl(valores.pagamentoTotal)}</span>
                   </div>
                 </div>
               </div>
@@ -966,7 +983,7 @@ export default function App() {
                       Total acumulado do cliente: <strong>{brl(valores.totalFluxoSemFin)}</strong>
                     </p>
                     <p>
-                      Cobertura total (cliente + banco): <strong>{brl(valores.totalJaSomado)}</strong>
+                      Pagamento total (cliente + banco): <strong>{brl(valores.pagamentoTotal)}</strong>
                     </p>
                     {valores.schedule.length > 0 && (
                       <p className="text-xs text-gray-500">
@@ -1075,7 +1092,7 @@ export default function App() {
         .paper img { max-width: 100%; height: auto; }
         .paper * { line-height: 1.45; word-break: break-word; }
         @media print {
-          @page { size: A4 portrait; margin: 14mm; }
+          @page { size: A4 landscape; margin: 14mm; }
           .sticky { display: none !important; }
           body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           .bg-emerald-50 { background-color: #ecfdf5 !important; }
@@ -1110,23 +1127,59 @@ function Card({ title, children }) {
 }
 
 function Input({ label, value, onChange, placeholder, currency = false }) {
-  const displayValue =
-    currency && value !== "" && value !== null && value !== undefined ? brl(value) : value ?? "";
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState("");
+  const normalizedValue = value ?? "";
+  useEffect(() => {
+    if (!focused) {
+      setDraft("");
+    }
+  }, [focused, normalizedValue]);
+
+  const displayValue = currency
+    ? focused
+      ? draft
+      : normalizedValue === "" || normalizedValue === null
+      ? ""
+      : brl(normalizedValue)
+    : normalizedValue;
+
   const handleFocus = currency
     ? (e) => {
+        setFocused(true);
+        const baseValue =
+          normalizedValue === "" || normalizedValue === null
+            ? ""
+            : brl(normalizedValue).replace(/^R\$\s?/, "");
+        setDraft(baseValue);
         requestAnimationFrame(() => e.target.select());
       }
     : undefined;
+
+  const handleBlur = currency
+    ? () => {
+        setFocused(false);
+      }
+    : undefined;
+
+  const handleChange = (event) => {
+    if (currency && focused) {
+      setDraft(event.target.value);
+    }
+    onChange(event);
+  };
+
   return (
     <label className="block">
       <div className="text-xs text-gray-600 mb-1">{label}</div>
       <input
         className="w-full px-3 py-2 rounded-xl border focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
         value={displayValue}
-        onChange={onChange}
+        onChange={handleChange}
         placeholder={placeholder}
         onFocus={handleFocus}
-        inputMode={currency ? "numeric" : undefined}
+        onBlur={handleBlur}
+        inputMode={currency ? "decimal" : undefined}
       />
     </label>
   );
