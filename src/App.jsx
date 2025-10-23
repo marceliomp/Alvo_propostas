@@ -396,7 +396,7 @@ export default function App() {
       page.style.boxShadow = "none";
 
       const canvas = await window.html2canvas(page, {
-        scale: 2,
+        scale: Math.min(window.devicePixelRatio || 1.5, 1.6),
         useCORS: true,
         backgroundColor: "#ffffff",
       });
@@ -405,7 +405,7 @@ export default function App() {
       page.style.maxWidth = originalMaxWidth || "";
       page.style.boxShadow = originalBoxShadow || "";
 
-      const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/jpeg", 0.82);
       const ratio = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
       const renderWidth = canvas.width * ratio;
       const renderHeight = canvas.height * ratio;
@@ -415,7 +415,7 @@ export default function App() {
       if (index > 0) {
         pdf.addPage(undefined, orientation);
       }
-      pdf.addImage(imgData, "PNG", offsetX, offsetY, renderWidth, renderHeight);
+      pdf.addImage(imgData, "JPEG", offsetX, offsetY, renderWidth, renderHeight);
     }
     const file = `Proposta_Alvo_${(data.cliente || "cliente").replace(/\s+/g, "_")}.pdf`;
     pdf.save(file);
@@ -429,21 +429,111 @@ export default function App() {
   const clearAll = () => setData({});
 
   const imagensGaleria = [data.imagem1, data.imagem2, data.imagem3, data.imagem4].filter(Boolean);
-  const resumoFluxoBase = [
-    { label: "Entrada", valor: valores.totalEntrada },
-    { label: "Durante a obra", valor: valores.totalObra },
-    { label: "Reforços", valor: valores.totalReforcos },
-  ];
-  if (valores.totalChavesEntrega > 0) {
-    resumoFluxoBase.push({
-      label: data.chavesForma === "avista" ? "Chaves na entrega" : "Chaves (na entrega)",
-      valor: valores.totalChavesEntrega,
-    });
-  }
-  if (valores.totalPosChaves > 0) {
-    resumoFluxoBase.push({ label: "Pós-chaves", valor: valores.totalPosChaves });
-  }
-  const resumoFluxo = resumoFluxoBase.filter((item) => item.valor > 0);
+  const fluxoResumo = useMemo(() => {
+    const totalCliente = valores.totalFluxoSemFin;
+    const totalGeral = valores.totalJaSomado;
+    const itens = [];
+
+    if (valores.totalEntrada > 0) {
+      itens.push({
+        key: "entrada",
+        label: "Entrada",
+        valor: valores.totalEntrada,
+        percentual: totalCliente > 0 ? (valores.totalEntrada / totalCliente) * 100 : 0,
+        contexto: "fluxo do cliente",
+        detalhe:
+          valores.entradaParcelas > 1
+            ? `${valores.entradaParcelas}x de ${brl(valores.entradaParcela)}`
+            : valores.entradaParcelas === 1
+            ? "Pagamento no ato"
+            : null,
+      });
+    }
+
+    if (valores.totalObra > 0) {
+      itens.push({
+        key: "obra",
+        label: "Durante a obra",
+        valor: valores.totalObra,
+        percentual: totalCliente > 0 ? (valores.totalObra / totalCliente) * 100 : 0,
+        contexto: "fluxo do cliente",
+        detalhe:
+          valores.duranteObraParcelas > 0
+            ? `${valores.duranteObraParcelas}x de ${brl(valores.duranteObraParcela)}`
+            : null,
+      });
+    }
+
+    if (valores.totalReforcos > 0) {
+      itens.push({
+        key: "reforcos",
+        label: "Reforços",
+        valor: valores.totalReforcos,
+        percentual: totalCliente > 0 ? (valores.totalReforcos / totalCliente) * 100 : 0,
+        contexto: "fluxo do cliente",
+        detalhe:
+          valores.qRef > 0
+            ? `${valores.qRef}x de ${brl(valores.vRef)} a cada ${valores.freqRef}m`
+            : null,
+      });
+    }
+
+    if (valores.totalChavesEntrega > 0) {
+      itens.push({
+        key: "chaves_entrega",
+        label: "Chaves na entrega",
+        valor: valores.totalChavesEntrega,
+        percentual: totalCliente > 0 ? (valores.totalChavesEntrega / totalCliente) * 100 : 0,
+        contexto: "fluxo do cliente",
+        detalhe:
+          data.chavesForma === "posConstrutora"
+            ? "Quitação na entrega"
+            : valores.chavesExtraNaEntrega
+            ? "Inclui parcela adicional da construtora"
+            : "Pagamento no recebimento",
+      });
+    }
+
+    if (valores.totalPosChaves > 0) {
+      itens.push({
+        key: "pos_chaves",
+        label: "Pós-chaves",
+        valor: valores.totalPosChaves,
+        percentual: totalCliente > 0 ? (valores.totalPosChaves / totalCliente) * 100 : 0,
+        contexto: "fluxo do cliente",
+        detalhe:
+          data.chavesForma === "posConstrutora"
+            ? `${Math.max(1, Number(data.chavesPosParcelas || 0))}x de ${brl(
+                valores.chavesTotal / Math.max(1, Number(data.chavesPosParcelas || 1))
+              )}`
+            : "Parcela acordada com a construtora",
+      });
+    }
+
+    if (valores.totalFinanciado > 0) {
+      itens.push({
+        key: "financiamento",
+        label: "Financiamento (banco)",
+        valor: valores.totalFinanciado,
+        percentual: totalGeral > 0 ? (valores.totalFinanciado / totalGeral) * 100 : 0,
+        contexto: "total do cliente + banco",
+        destaque: true,
+        detalhe: "Valor previsto para financiamento bancário",
+      });
+    }
+
+    return { itens, totalCliente, totalGeral };
+  }, [
+    valores,
+    data.chavesForma,
+    data.chavesPosParcelas,
+    data.balaoQuantidade,
+    data.balaoValor,
+    data.balaoFrequenciaMeses,
+  ]);
+  const resumoFluxo = fluxoResumo.itens;
+  const totalFluxoCliente = fluxoResumo.totalCliente;
+  const totalFluxoGeral = fluxoResumo.totalGeral;
 
   const saldoTitle = valores.saldoACompor > 0.5
     ? "Saldo a compor"
@@ -804,26 +894,15 @@ export default function App() {
                 </div>
               </div>
               <div className="mt-3 rounded-xl bg-white border p-3">
-                <p className="font-semibold mb-1">Totais do fluxo</p>
-                <ul className="text-xs space-y-1">
-                  {resumoFluxo.map((item) => (
-                    <li key={item.label} className="flex justify-between">
-                      <span>{item.label}</span>
-                      <span className="font-medium">{brl(item.valor)}</span>
-                    </li>
-                  ))}
-                  {valores.totalFinanciado > 0 && (
-                    <li className="flex justify-between text-emerald-700">
-                      <span>Financiado (banco)</span>
-                      <span className="font-semibold">{brl(valores.totalFinanciado)}</span>
-                    </li>
-                  )}
-                </ul>
-                <div className="mt-2 text-xs text-gray-600">
-                  Pagamento do cliente (sem financiamento): <strong>{brl(valores.totalFluxoSemFin)}</strong>
-                </div>
-                <div className="text-xs text-gray-600">
-                  Pagamento total (cliente + banco): <strong>{brl(valores.totalJaSomado)}</strong>
+                <p className="font-semibold mb-2">Resumo do fluxo de pagamento</p>
+                <FluxoResumoCards items={resumoFluxo} />
+                <div className="mt-3 text-xs text-gray-600 space-y-1">
+                  <div>
+                    Pagamento do cliente (sem financiamento): <strong>{brl(totalFluxoCliente)}</strong>
+                  </div>
+                  <div>
+                    Pagamento total (cliente + banco): <strong>{brl(totalFluxoGeral)}</strong>
+                  </div>
                 </div>
               </div>
             </div>
@@ -917,26 +996,20 @@ export default function App() {
             <section className="page bg-white border rounded-3xl shadow-sm p-12 space-y-6">
               <h3 className="text-lg font-semibold text-slate-700">Condições Comerciais</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="rounded-2xl border bg-slate-50 p-4 space-y-2 text-sm">
-                  {resumoFluxo.map((item) => (
-                    <div key={item.label} className="flex justify-between">
-                      <span>{item.label}</span>
-                      <span className="font-semibold">{brl(item.valor)}</span>
+                <div className="rounded-2xl border bg-white p-4 space-y-3 text-sm">
+                  <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+                    Resumo do fluxo de pagamento
+                  </h4>
+                  <FluxoResumoCards items={resumoFluxo} />
+                  <div className="text-xs text-gray-600 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Pagamento do cliente</span>
+                      <span className="font-semibold">{brl(totalFluxoCliente)}</span>
                     </div>
-                  ))}
-                  {valores.totalFinanciado > 0 && (
-                    <div className="flex justify-between text-emerald-700 font-semibold">
-                      <span>Financiado (banco)</span>
-                      <span>{brl(valores.totalFinanciado)}</span>
+                    <div className="flex justify-between">
+                      <span>Pagamento total (cliente + banco)</span>
+                      <span className="font-semibold">{brl(totalFluxoGeral)}</span>
                     </div>
-                  )}
-                  <div className="pt-2 border-t text-sm text-gray-600 flex justify-between">
-                    <span>Pagamento do cliente (sem financiamento)</span>
-                    <span className="font-semibold">{brl(valores.totalFluxoSemFin)}</span>
-                  </div>
-                  <div className="text-xs text-gray-500 flex justify-between">
-                    <span>Pagamento total</span>
-                    <span className="font-medium">{brl(valores.totalJaSomado)}</span>
                   </div>
                 </div>
                 <div className="rounded-2xl border bg-slate-50 p-4 text-sm space-y-2">
@@ -1032,6 +1105,10 @@ export default function App() {
                   {showFluxoDetalhado ? "Ocultar parcelas" : "Ver fluxo mês a mês"}
                 </button>
               </div>
+              <FluxoResumoCards
+                items={resumoFluxo}
+                columns="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3"
+              />
               <div className="rounded-xl border overflow-hidden">
                 {showFluxoDetalhado ? (
                   <table className="w-full text-[12px]">
@@ -1195,6 +1272,33 @@ const formatDate = (value) => {
   const date = new Date(value);
   return Number.isFinite(date.getTime()) ? date.toLocaleDateString("pt-BR") : "—";
 };
+
+function FluxoResumoCards({ items, columns = "grid grid-cols-1 sm:grid-cols-2 gap-3" }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div className={columns}>
+      {items.map((item) => (
+        <div
+          key={item.key}
+          className={`rounded-lg border p-3 text-xs space-y-1 ${
+            item.destaque ? "bg-emerald-50 border-emerald-200 text-emerald-900" : "bg-slate-50 border-slate-200"
+          }`}
+        >
+          <div className="text-[11px] uppercase tracking-wide font-semibold">{item.label}</div>
+          <div className="text-base font-semibold">{brl(item.valor)}</div>
+          <div className={`text-[11px] ${item.destaque ? "text-emerald-700" : "text-gray-600"}`}>
+            {pct(item.percentual)} {item.contexto ? `do ${item.contexto}` : "do total"}
+          </div>
+          {item.detalhe ? (
+            <div className={`text-[11px] ${item.destaque ? "text-emerald-700/80" : "text-gray-500"}`}>
+              {item.detalhe}
+            </div>
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function Card({ title, children }) {
   return (
