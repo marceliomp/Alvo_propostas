@@ -750,8 +750,8 @@ export default function App() {
         }
 
         return {
-          id: item.id || 'cmp-' + index,
-          nome: item.nome || 'Investimento ' + (index + 1),
+          id: item.id || `cmp-${index}`,
+          nome: item.nome || `Investimento ${index + 1}`,
           taxaAnual,
           descricao: item.descricao || "",
           highlight: Boolean(item.highlight),
