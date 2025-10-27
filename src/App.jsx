@@ -78,7 +78,8 @@ const PageHeader = ({ data, title = "Proposta de Investimento Imobiliário", sub
 const PageFooter = ({ data, children }) => {
   const company = data.company || "Alvo BR";
   const phone = data.phone ? ` · ${data.phone}` : "";
-  const email = data.email ? ` · ${email}` : "";
+  const email = data.email ? ` · ${data.email}` : "";  // 
+
 
   return (
     <footer className="pt-6 mt-6 border-t border-dashed border-slate-200 space-y-2 text-[11px] text-gray-500 leading-5">
