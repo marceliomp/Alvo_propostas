@@ -1,4 +1,3 @@
-cat > /mnt/user-data/outputs/App-FINAL-COM-LOGO.jsx << 'EOFALL'
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import alvoLogo from "./assets/alvo-logo.png";
 
@@ -14,11 +13,17 @@ const palette = {
 /********************
  * Utils
  ********************/
-const brl = (n) => Number(n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const brl = (n) =>
+  Number(n ?? 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+
 const pct = (n) => {
   const num = Number.isFinite(Number(n)) ? Number(n) : 0;
   return num.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
 };
+
 const currencyToNumber = (s) => {
   if (typeof s === "number") return s;
   if (!s) return 0;
@@ -30,7 +35,9 @@ const currencyToNumber = (s) => {
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toLocaleDateString("pt-BR") : "—";
+  return Number.isFinite(date.getTime())
+    ? date.toLocaleDateString("pt-BR")
+    : "—";
 };
 
 /********************
@@ -42,36 +49,47 @@ const AlvoLogo = ({ size = 48, className = "" }) => {
     <img
       src={alvoLogo}
       className={classes}
-      style={{ height: size, width: "auto", maxWidth: "100%", objectFit: "contain", display: "inline-block" }}
+      style={{
+        height: size,
+        width: "auto",
+        maxWidth: "100%",
+        objectFit: "contain",
+        display: "inline-block",
+      }}
       alt="Alvo BR"
       loading="eager"
     />
   );
 };
 
-const PageHeader = ({ data, title = "Proposta de Investimento Imobiliário", subtitle }) => {
+/********************
+ * Cabeçalho da Página
+ ********************/
+const PageHeader = ({
+  data,
+  title = "Proposta de Investimento Imobiliário",
+  subtitle,
+}) => {
   const company = data.company || "—";
   const consultor = data.consultor || "Consultor";
-  const headerSubtitle = subtitle || \`Elaborada por \${company} · \${consultor}\`;
+  const headerSubtitle = subtitle || `Elaborada por ${company} · ${consultor}`;
 
   return (
     <header className="flex flex-wrap items-start justify-between gap-6 pb-6 border-b border-slate-200">
       <div className="flex items-start gap-4 flex-1 min-w-[220px]">
         <AlvoLogo size={64} />
         <div>
-          <h2 className="text-xl font-semibold text-slate-800 leading-tight">{title}</h2>
+          <h2 className="text-xl font-semibold text-slate-800 leading-tight">
+            {title}
+          </h2>
           <p className="text-sm text-gray-500 mt-1">{headerSubtitle}</p>
         </div>
-      </div>
-      <div className="text-sm text-right text-gray-500 space-y-1 min-w-[180px]">
-        <p>Data: {formatDate(data.date)}</p>
-        <p>Validade: {formatDate(data.validade)}</p>
-        <p>Telefone: {data.phone || "—"}</p>
-        <p>E-mail: {data.email || "—"}</p>
       </div>
     </header>
   );
 };
+
+export { palette, brl, pct, currencyToNumber, formatDate, AlvoLogo, PageHeader };
 
 const PageFooter = ({ data, children }) => {
   const company = data.company || "Alvo BR";
