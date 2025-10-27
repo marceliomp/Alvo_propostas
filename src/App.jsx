@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import alvoLogo from "./assets/alvo-logo.png";
 
+// Adicione isto no seu public/index.html na tag <head>:
+// <link rel="icon" href="%PUBLIC_URL%/favicon.png" />
+
 const palette = {
   petrolBlue: "#003B46",
   petrolBlueDark: "#021F26",
@@ -75,7 +78,7 @@ const PageHeader = ({ data, title = "Proposta de Investimento Imobiliário", sub
 const PageFooter = ({ data, children }) => {
   const company = data.company || "Alvo BR";
   const phone = data.phone ? ` · ${data.phone}` : "";
-  const email = data.email ? ` · ${data.email}` : "";
+  const email = data.email ? ` · ${email}` : "";
 
   return (
     <footer className="pt-6 mt-6 border-t border-dashed border-slate-200 space-y-2 text-[11px] text-gray-500 leading-5">
@@ -383,15 +386,15 @@ export default function App() {
 
   if (step === "setup") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 p-6">
         <div className="max-w-5xl mx-auto space-y-6">
-          <div className="text-center space-y-2 py-4">
+          <div className="text-center space-y-3 py-6">
             <AlvoLogo size={80} />
-            <h1 className="text-3xl font-bold text-[color:var(--petrol-blue)]">Simulador de Proposta Imobiliária</h1>
-            <p className="text-gray-600">Preencha os dados abaixo e gere a proposta completa em PDF</p>
+            <h1 className="text-4xl font-bold text-[#003B46]">Simulador de Proposta Imobiliária</h1>
+            <p className="text-lg text-[#0E7C7B]">Preencha os dados abaixo e gere a proposta completa em PDF</p>
           </div>
 
-          <Card title="📋 Dados da Empresa">
+          <Card title="📋 Dados da Empresa" icon="📋">
             <Input
               label="Nome da Empresa"
               value={data.company}
@@ -406,7 +409,7 @@ export default function App() {
             <Input label="E-mail" value={data.email} onChange={(e) => setData({ ...data, email: e.target.value })} />
           </Card>
 
-          <Card title="👤 Dados do Cliente">
+          <Card title="👤 Dados do Cliente" icon="👤">
             <Input
               label="Nome do Cliente"
               value={data.cliente}
@@ -424,7 +427,7 @@ export default function App() {
             />
           </Card>
 
-          <Card title="🏢 Dados do Empreendimento">
+          <Card title="🏢 Dados do Empreendimento" icon="🏢">
             <Input
               label="Nome do Empreendimento"
               value={data.empreendimento}
@@ -460,7 +463,7 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="💰 Valores e Pagamento">
+          <Card title="💰 Valores e Pagamento" icon="💰">
             <Input
               label="Valor Total"
               value={data.valorTotal}
@@ -500,9 +503,9 @@ export default function App() {
             />
             <div className="space-y-3">
               <label className="block">
-                <div className="text-xs text-gray-600 mb-1">Forma de Pagamento nas Chaves</div>
+                <div className="text-sm font-medium text-[#003B46] mb-2">Forma de Pagamento nas Chaves</div>
                 <select
-                  className="w-full px-3 py-2 rounded-xl border border-[rgba(0,59,70,0.2)] bg-white text-[color:var(--petrol-black)] focus:outline-none focus:ring-2 focus:ring-[rgba(14,124,123,0.35)] focus:border-[rgba(14,124,123,0.55)]"
+                  className="w-full px-4 py-3 rounded-lg border-2 border-[#0E7C7B]/30 bg-white text-[#003B46] focus:outline-none focus:ring-2 focus:ring-[#0E7C7B] focus:border-[#0E7C7B] transition-all"
                   value={data.chavesForma}
                   onChange={(e) => setData({ ...data, chavesForma: e.target.value })}
                 >
@@ -570,7 +573,7 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="📊 Análise de Investimento">
+          <Card title="📊 Análise de Investimento" icon="📊">
             <Input
               label="Apreciação Esperada (%)"
               value={data.apreciacao}
@@ -593,7 +596,7 @@ export default function App() {
             />
           </Card>
 
-          <Card title="📆 Validade e Data">
+          <Card title="📆 Validade e Data" icon="📆">
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="Data da Proposta"
@@ -608,14 +611,14 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="📈 Comparativos de Investimento">
+          <Card title="📈 Comparativos de Investimento" icon="📈">
             <div className="space-y-4">
               {data.comparativos?.map((cmp, idx) => (
-                <div key={cmp.id} className="p-4 border border-slate-200 rounded-xl bg-slate-50 space-y-3">
+                <div key={cmp.id} className="p-4 border-2 border-[#0E7C7B]/20 rounded-lg bg-white/50 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h5 className="font-semibold text-sm">Comparativo {idx + 1}</h5>
+                    <h5 className="font-semibold text-[#003B46]">Comparativo {idx + 1}</h5>
                     <button
-                      className="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded-lg"
+                      className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       onClick={() => {
                         const updated = data.comparativos.filter((c) => c.id !== cmp.id);
                         setData({ ...data, comparativos: updated });
@@ -664,14 +667,14 @@ export default function App() {
                         );
                         setData({ ...data, comparativos: updated });
                       }}
-                      className="w-4 h-4"
+                      className="w-4 h-4 accent-[#0E7C7B]"
                     />
-                    <span className="text-xs text-gray-600">Destacar este investimento</span>
+                    <span className="text-sm text-[#003B46]">Destacar este investimento</span>
                   </label>
                 </div>
               ))}
               <button
-                className="w-full px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 font-medium"
+                className="w-full px-4 py-3 bg-[#0E7C7B]/10 text-[#0E7C7B] rounded-lg hover:bg-[#0E7C7B]/20 font-semibold transition-colors border-2 border-[#0E7C7B]/30"
                 onClick={() => {
                   setData({
                     ...data,
@@ -686,10 +689,10 @@ export default function App() {
 
           <div className="flex gap-3">
             <button
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-700 to-emerald-800 text-white rounded-xl font-semibold hover:from-emerald-800 hover:to-emerald-900"
+              className="flex-1 px-8 py-4 bg-gradient-to-r from-[#0E7C7B] to-[#139C95] text-white rounded-xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
               onClick={() => setStep("result")}
             >
-              Gerar Proposta
+              ✨ Gerar Proposta
             </button>
           </div>
         </div>
@@ -702,27 +705,10 @@ export default function App() {
             --petrol-black: ${palette.black};
             --petrol-white: ${palette.white};
           }
-          body { font-family: Inter, system-ui, -apple-system, sans-serif; color: var(--petrol-black); }
-          .theme-card {
-            background: white;
-            border-radius: 1rem;
-            border: 1px solid rgba(0, 59, 70, 0.15);
-            overflow: hidden;
-          }
-          .theme-card__header {
-            background: linear-gradient(135deg, rgba(0, 59, 70, 0.08) 0%, rgba(14, 124, 123, 0.08) 100%);
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid rgba(0, 59, 70, 0.12);
-          }
-          .theme-mini-card {
-            background: rgba(0, 59, 70, 0.06);
-            padding: 0.875rem;
-            border-radius: 0.75rem;
-            border: 1px solid rgba(0, 59, 70, 0.12);
-          }
-          .theme-mini-card--highlight {
-            background: rgba(14, 124, 123, 0.12);
-            border: 1px solid rgba(14, 124, 123, 0.3);
+          body { 
+            font-family: Inter, system-ui, -apple-system, sans-serif; 
+            color: var(--petrol-black);
+            background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 50%, #80cbc4 100%);
           }
         `}</style>
       </div>
@@ -1059,27 +1045,9 @@ export default function App() {
           --petrol-black: ${palette.black};
           --petrol-white: ${palette.white};
         }
-        body { font-family: Inter, system-ui, -apple-system, sans-serif; color: var(--petrol-black); }
-        .theme-card {
-          background: white;
-          border-radius: 1rem;
-          border: 1px solid rgba(0, 59, 70, 0.15);
-          overflow: hidden;
-        }
-        .theme-card__header {
-          background: linear-gradient(135deg, rgba(0, 59, 70, 0.08) 0%, rgba(14, 124, 123, 0.08) 100%);
-          padding: 1rem 1.25rem;
-          border-bottom: 1px solid rgba(0, 59, 70, 0.12);
-        }
-        .theme-mini-card {
-          background: rgba(0, 59, 70, 0.06);
-          padding: 0.875rem;
-          border-radius: 0.75rem;
-          border: 1px solid rgba(0, 59, 70, 0.12);
-        }
-        .theme-mini-card--highlight {
-          background: rgba(14, 124, 123, 0.12);
-          border: 1px solid rgba(14, 124, 123, 0.3);
+        body { 
+          font-family: Inter, system-ui, -apple-system, sans-serif; 
+          color: var(--petrol-black);
         }
         .page-break { page-break-before: always; margin-top: 8px; }
         .paper img { max-width: 100%; height: auto; }
@@ -1090,13 +1058,16 @@ export default function App() {
 }
 
 // Componentes auxiliares
-function Card({ title, children }) {
+function Card({ title, icon, children }) {
   return (
-    <div className="theme-card">
-      <div className="theme-card__header">
-        <h4 className="font-semibold tracking-tight text-[color:var(--petrol-blue)]">{title}</h4>
+    <div className="bg-white rounded-2xl shadow-lg border-2 border-[#0E7C7B]/20 overflow-hidden">
+      <div className="bg-gradient-to-r from-[#003B46] to-[#0E7C7B] px-6 py-4">
+        <h4 className="font-bold text-white text-lg flex items-center gap-2">
+          {icon && <span>{icon}</span>}
+          {title}
+        </h4>
       </div>
-      <div className="p-5 space-y-3">{children}</div>
+      <div className="p-6 space-y-4">{children}</div>
     </div>
   );
 }
@@ -1149,9 +1120,9 @@ function Input({ label, value, onChange, placeholder, currency = false }) {
   const displayValue = currency ? typedValue : typedValue;
   return (
     <label className="block">
-      <div className="text-xs text-gray-600 mb-1">{label}</div>
+      <div className="text-sm font-medium text-[#003B46] mb-2">{label}</div>
       <input
-        className="w-full px-3 py-2 rounded-xl border border-[rgba(0,59,70,0.2)] bg-white text-[color:var(--petrol-black)] focus:outline-none focus:ring-2 focus:ring-[rgba(14,124,123,0.35)] focus:border-[rgba(14,124,123,0.55)]"
+        className="w-full px-4 py-3 rounded-lg border-2 border-[#0E7C7B]/30 bg-white text-[#003B46] focus:outline-none focus:ring-2 focus:ring-[#0E7C7B] focus:border-[#0E7C7B] transition-all"
         value={displayValue}
         onChange={handleChangeInternal}
         placeholder={placeholder}
@@ -1174,9 +1145,9 @@ function DataRow({ k, v }) {
 
 function KPI({ title, value, highlight, subValue }) {
   return (
-    <div className={`theme-mini-card ${highlight ? "theme-mini-card--highlight" : ""}`}>
-      <div className="text-xs text-gray-600 mb-1">{title}</div>
-      <div className="text-lg font-bold text-[color:var(--petrol-blue)]">{value}</div>
+    <div className={`p-4 rounded-lg border-2 ${highlight ? 'bg-gradient-to-br from-[#0E7C7B]/10 to-[#139C95]/10 border-[#0E7C7B]' : 'bg-slate-50 border-slate-200'}`}>
+      <div className="text-xs text-gray-600 mb-1 uppercase tracking-wide font-semibold">{title}</div>
+      <div className="text-xl font-bold text-[#003B46]">{value}</div>
       {subValue && <div className="text-[11px] text-gray-500 mt-1">{subValue}</div>}
     </div>
   );
@@ -1187,14 +1158,14 @@ function FluxoResumoCards({ items, columns = "grid grid-cols-1 sm:grid-cols-2 ga
   return (
     <div className={columns}>
       {items.map((item) => (
-        <div key={item.key} className={`theme-mini-card ${item.destaque ? "theme-mini-card--highlight" : ""}`}>
-          <div className="text-[11px] uppercase tracking-wide font-semibold">{item.label}</div>
-          <div className="text-base font-semibold">{brl(item.valor)}</div>
-          <div className="text-[11px]" style={{ color: item.destaque ? "var(--petrol-green)" : "rgba(0, 59, 70, 0.65)" }}>
+        <div key={item.key} className={`p-4 rounded-lg border-2 ${item.destaque ? 'bg-gradient-to-br from-[#0E7C7B]/10 to-[#139C95]/10 border-[#0E7C7B]' : 'bg-slate-50 border-slate-200'}`}>
+          <div className="text-[11px] uppercase tracking-wide font-bold text-[#003B46]">{item.label}</div>
+          <div className="text-lg font-bold text-[#003B46]">{brl(item.valor)}</div>
+          <div className="text-xs" style={{ color: item.destaque ? "#0E7C7B" : "#6B7280" }}>
             {pct(item.percentual)} {item.contexto ? `do ${item.contexto}` : "do total"}
           </div>
           {item.detalhe ? (
-            <div className="text-[11px]" style={{ color: item.destaque ? "rgba(14, 124, 123, 0.85)" : "rgba(0, 59, 70, 0.55)" }}>
+            <div className="text-xs" style={{ color: item.destaque ? "#0E7C7B" : "#9CA3AF" }}>
               {item.detalhe}
             </div>
           ) : null}
