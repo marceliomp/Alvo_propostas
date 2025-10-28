@@ -58,7 +58,7 @@ const PageHeader = ({ data, title = "Proposta de Investimento Imobiliário", sub
 
   return (
     <header className="flex flex-wrap items-start justify-between gap-6 pb-6 border-b border-slate-200">
-      <div className="flex items-start gap-4 flex-1 min-w-[220px]">
+      <"flex items-start gap-4 flex-1 min-w-[220px]">
         <AlvoLogo size={80} />
         <div>
           <h2 className="text-xl font-semibold text-slate-800 leading-tight">{title}</h2>
@@ -464,19 +464,18 @@ export default function App() {
                 value={data.entrega}
                 onChange={(e) => setData({ ...data, entrega: e.target.value })}
               />
-            < div className="grid grid-cols-2 gap-3 mt-4" >
-  <Input
-    label="Tempo de Obra (anos)"
-    value={data.prazoObraAnos}
-    onChange={(e) => setData({ ...data, prazoObraAnos: e.target.value })}
-  />
-  <Input
-    label="Valorização Anual (%)"
-    value={data.valorizacaoAnual}
-    onChange={(e) => setData({ ...data, valorizacaoAnual: e.target.value })}
-  />
-</div>
-
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <Input
+                label="Tempo de Obra (anos)"
+                value={data.prazoObraAnos}
+                onChange={(e) => setData({ ...data, prazoObraAnos: e.target.value })}
+              />
+              <Input
+                label="Valorização Anual (%)"
+                value={data.valorizacaoAnual}
+                onChange={(e) => setData({ ...data, valorizacaoAnual: e.target.value })}
+              />
+            </div>
           </Card>
 
 {/* ===================== */}
