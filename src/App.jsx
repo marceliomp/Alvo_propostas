@@ -132,7 +132,7 @@ const createComparativo = (overrides = {}) => ({
 const withComparativoIds = (lista = []) => lista.map((item) => createComparativo(item));
 
 const sample = {
-  company: "Alvo BR Imobiliária",
+  company: "Alvo BR Imob",
   date: new Date().toISOString().slice(0, 10),
   consultor: "Nome do Consultor",
   phone: "(47) 9 9999-9999",
@@ -146,19 +146,19 @@ const sample = {
   tipo: "Apartamento 2 suítes",
   area: 74,
   vagas: 2,
-  entrega: "Dezembro/2026",
+  entrega: "Dezembro/2029",
   valorTotal: 980000,
   entradaValor: 98000,
   entradaParcelas: 1,
-  obraParcelaValor: 12250,
-  duranteObraParcelas: 36,
+  obraParcelaValor: 5000,
+  duranteObraParcelas: 48,
   chavesValor: 441000,
   chavesForma: "financiamento",
   chavesPosParcelas: 0,
   balaoValor: 0,
   balaoQuantidade: 0,
   balaoFrequenciaMeses: 6,
-  prazoObraAnos: 3,
+  prazoObraAnos: 4,
   apreciacao: 18,
   adrDiaria: 350,
   ocupacao: 70,
@@ -278,8 +278,11 @@ export default function App() {
     const posChavesValor = posChavesParcelas > 0 ? (totalPosConstrutora - posBalaoTotal) / posChavesParcelas : 0;
 
     const prazoObra = Number(data.prazoObraAnos) || 0;
-    const apreciacao = Number(data.apreciacao) || 0;
-    const valorEntrega = total * (1 + apreciacao / 100);
+    const valorizacaoAnual = Number(data.valorizacaoAnual) || 0;
+    const anosObra = Number(data.prazoObraAnos) || 0;
+    const fatorValorizacao = Math.pow(1 + valorizacaoAnual / 100, anosObra);
+    const valorEntrega = total * fatorValorizacao;
+    const valorizacaoTotalPercent = (fatorValorizacao - 1) * 100;
     const investimento = totalAteChaves;
     const entregaLiq = valorEntrega - totalFinanciado - totalShortStay - posBalaoTotal - totalPosConstrutora;
     const lucro = entregaLiq - investimento;
@@ -461,7 +464,19 @@ export default function App() {
                 value={data.entrega}
                 onChange={(e) => setData({ ...data, entrega: e.target.value })}
               />
-            </div>
+            < div className="grid grid-cols-2 gap-3 mt-4" >
+  <Input
+    label="Tempo de Obra (anos)"
+    value={data.prazoObraAnos}
+    onChange={(e) => setData({ ...data, prazoObraAnos: e.target.value })}
+  />
+  <Input
+    label="Valorização Anual (%)"
+    value={data.valorizacaoAnual}
+    onChange={(e) => setData({ ...data, valorizacaoAnual: e.target.value })}
+  />
+</div>
+
           </Card>
 
 {/* ===================== */}
@@ -660,13 +675,86 @@ export default function App() {
     })()}
   </Card>
 )}
+            {/* ===================== */}
+{/* 📊 RESUMO AUTOMÁTICO DO FLUXO DE PAGAMENTO */}
+{/* ===================== */}
+<Card title="Resumo do Fluxo de Pagamento" icon="📊">
+  {(() => {
+    const total = Number(data.valorTotal) || 0;
+    const ato = Number(data.entradaValor) || 0;
+    const parcelasObra =
+      (Number(data.obraParcelaValor) || 0) *
+      (Number(data.duranteObraParcelas) || 0);
+    const baloesObra =
+      (Number(data.balaoValor) || 0) * (Number(data.balaoQuantidade) || 0);
+    const totalDuranteObra = ato + parcelasObra + baloesObra;
+
+    const valorFinanciado =
+      data.chavesForma === "financiamento"
+        ? Number(data.valorFinanciado) || 0
+        : 0;
+
+    const saldoConstrutora =
+      data.chavesForma === "diretoConstrutora"
+        ? Math.max(0, total - totalDuranteObra)
+        : 0;
+
+    const saldoRestante = valorFinanciado + saldoConstrutora;
+    const percentualDurante =
+      total > 0 ? ((totalDuranteObra / total) * 100).toFixed(1) : 0;
+    const percentualRestante =
+      total > 0 ? ((saldoRestante / total) * 100).toFixed(1) : 0;
+
+    return (
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+            <p className="text-xs text-emerald-700 font-semibold">
+              💰 Durante a Obra
+            </p>
+            <p className="text-lg font-bold text-[#003B46]">{brl(totalDuranteObra)}</p>
+            <p className="text-xs text-gray-500">{percentualDurante}% do total</p>
+          </div>
+
+          <div className="p-3 rounded-xl bg-blue-50 border border-blue-200">
+            <p className="text-xs text-blue-700 font-semibold">
+              🔑 Pós-Obra / Financiado
+            </p>
+            <p className="text-lg font-bold text-[#003B46]">{brl(saldoRestante)}</p>
+            <p className="text-xs text-gray-500">{percentualRestante}% do total</p>
+          </div>
+
+          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+            <p className="text-xs text-amber-700 font-semibold">
+              💵 Valor Total do Imóvel
+            </p>
+            <p className="text-lg font-bold text-[#003B46]">{brl(total)}</p>
+            <p className="text-xs text-gray-500">100%</p>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+            <p className="text-xs text-slate-700 font-semibold">
+              ⚖️ Diferença / Ajuste
+            </p>
+            <p className="text-lg font-bold text-[#003B46]">
+              {brl(total - (totalDuranteObra + saldoRestante))}
+            </p>
+            <p className="text-xs text-gray-500">Verificação de equilíbrio</p>
+          </div>
+        </div>
+      </div>
+    );
+  })()}
+</Card>
+
 
           <Card title="Análise de Investimento" icon="📊">
-            <Input
-              label="Apreciação Esperada (%)"
-              value={data.apreciacao}
-              onChange={(e) => setData({ ...data, apreciacao: e.target.value })}
-            />
+           <Input
+  label="Valorização Anual (%)"
+  value={data.valorizacaoAnual}
+  onChange={(e) => setData({ ...data, valorizacaoAnual: e.target.value })}
+/>
+
             <Input
               label="ADR Diária (R$)"
               value={data.adrDiaria}
