@@ -38,7 +38,7 @@ const formatDate = (value) => {
 /********************
  * Logo Real da Alvo BR
  ********************/
-const AlvoLogo = ({ size = 48, className = "" }) => {
+const AlvoLogo = ({ size = 120, className = "" }) => {
   const classes = ["alvo-logo", className].filter(Boolean).join(" ");
   return (
     <img
