@@ -465,20 +465,25 @@ export default function App() {
           </Card>
 
 {/* ===================== */}
-{/* 💰 PAGAMENTO DURANTE A OBRA */}
+{/* 💰 FLUXO DE PAGAMENTO INTELIGENTE */}
 {/* ===================== */}
-<Card title="💰 Pagamento Durante a Obra" icon="💰">
+<Card title="Pagamento Durante a Obra" icon="💰">
   <Input
     label="Valor Total do Imóvel (R$)"
     value={data.valorTotal}
-    onChange={(e) => setData({ ...data, valorTotal: currencyToNumber(e.target.value) })}
+    onChange={(e) =>
+      setData({ ...data, valorTotal: currencyToNumber(e.target.value) })
+    }
     currency
   />
+
   <div className="grid grid-cols-2 gap-3 mt-3">
     <Input
-      label="Entrada / Ato (R$)"
+      label="Ato / Entrada (R$)"
       value={data.entradaValor}
-      onChange={(e) => setData({ ...data, entradaValor: currencyToNumber(e.target.value) })}
+      onChange={(e) =>
+        setData({ ...data, entradaValor: currencyToNumber(e.target.value) })
+      }
       currency
     />
     <Input
@@ -490,118 +495,171 @@ export default function App() {
 
   <div className="grid grid-cols-2 gap-3 mt-4">
     <Input
-      label="Valor Parcela Durante Obra (R$)"
+      label="Parcela Durante Obra (R$)"
       value={data.obraParcelaValor}
-      onChange={(e) => setData({ ...data, obraParcelaValor: currencyToNumber(e.target.value) })}
+      onChange={(e) =>
+        setData({ ...data, obraParcelaValor: currencyToNumber(e.target.value) })
+      }
       currency
     />
     <Input
-      label="Nº Parcelas Durante Obra"
+      label="Nº de Parcelas Durante Obra"
       value={data.duranteObraParcelas}
-      onChange={(e) => setData({ ...data, duranteObraParcelas: e.target.value })}
-    />
-  </div>
-
-  <div className="mt-4">
-    <Input
-      label="Prazo da Obra (anos)"
-      value={data.prazoObraAnos}
-      onChange={(e) => setData({ ...data, prazoObraAnos: e.target.value })}
+      onChange={(e) =>
+        setData({ ...data, duranteObraParcelas: e.target.value })
+      }
     />
   </div>
 
   <div className="grid grid-cols-3 gap-3 mt-4">
     <Input
-      label="Valor do Balão Durante Obra (R$)"
+      label="Balão Durante Obra (R$)"
       value={data.balaoValor}
-      onChange={(e) => setData({ ...data, balaoValor: currencyToNumber(e.target.value) })}
+      onChange={(e) =>
+        setData({ ...data, balaoValor: currencyToNumber(e.target.value) })
+      }
       currency
     />
     <Input
       label="Quantidade de Balões"
       value={data.balaoQuantidade}
-      onChange={(e) => setData({ ...data, balaoQuantidade: e.target.value })}
+      onChange={(e) =>
+        setData({ ...data, balaoQuantidade: e.target.value })
+      }
     />
     <Input
       label="Frequência (meses)"
       value={data.balaoFrequenciaMeses}
-      onChange={(e) => setData({ ...data, balaoFrequenciaMeses: e.target.value })}
+      onChange={(e) =>
+        setData({ ...data, balaoFrequenciaMeses: e.target.value })
+      }
     />
   </div>
 </Card>
 
 {/* ===================== */}
-{/* 🔑 FINANCIAMENTO OU CHAVES */}
+{/* 🔑 FINANCIAMENTO OU DIRETO COM CONSTRUTORA */}
 {/* ===================== */}
-<Card title="🔑 Financiamento ou Pagamento nas Chaves" icon="🔑">
+<Card title="🔑 Financiamento ou Direto com Construtora" icon="🔑">
   <label className="block">
-    <div className="text-sm font-medium text-[#003B46] mb-2">Forma de Pagamento</div>
+    <div className="text-sm font-medium text-[#003B46] mb-2">
+      Forma de Pagamento
+    </div>
     <select
-      className="w-full px-4 py-3 rounded-lg border-2 border-[#0E7C7B]/30 bg-white text-[#003B46] focus:outline-none focus:ring-2 focus:ring-[#0E7C7B] focus:border-[#0E7C7B] transition-all"
+      className="w-full px-4 py-3 rounded-lg border-2 border-[#0E7C7B]/30 bg-white text-[#003B46] focus:outline-none focus:ring-2 focus:ring-[#0E7C7B] transition-all"
       value={data.chavesForma}
       onChange={(e) => setData({ ...data, chavesForma: e.target.value })}
     >
       <option value="financiamento">Financiamento Bancário</option>
-      <option value="posConstrutora">Pós-Obra Direto com Construtora</option>
+      <option value="diretoConstrutora">Direto com Construtora</option>
     </select>
   </label>
 
-  <div className="grid grid-cols-2 gap-3 mt-4">
-    <Input
-      label="Valor nas Chaves (R$)"
-      value={data.chavesValor}
-      onChange={(e) => setData({ ...data, chavesValor: currencyToNumber(e.target.value) })}
-      currency
-    />
-    <Input
-      label="Valor Financiado (R$)"
-      value={data.valorFinanciado}
-      onChange={(e) => setData({ ...data, valorFinanciado: currencyToNumber(e.target.value) })}
-      currency
-    />
-  </div>
+  {data.chavesForma === "financiamento" && (
+    <div className="grid grid-cols-1 gap-3 mt-4">
+      <Input
+        label="Valor Financiado Total (R$)"
+        value={data.valorFinanciado}
+        onChange={(e) =>
+          setData({
+            ...data,
+            valorFinanciado: currencyToNumber(e.target.value),
+          })
+        }
+        currency
+      />
+    </div>
+  )}
+
+  {data.chavesForma === "diretoConstrutora" && (
+    <div className="mt-4 p-4 border-2 border-[#0E7C7B]/20 bg-[#0E7C7B]/5 rounded-lg">
+      <p className="text-sm text-[#003B46]">
+        💡 O saldo restante será automaticamente calculado e mostrado no
+        card "Pagamento Pós-Obra".
+      </p>
+    </div>
+  )}
 </Card>
 
 {/* ===================== */}
-{/* 📆 PAGAMENTO PÓS-CHAVES */}
+{/* 🧾 PAGAMENTO PÓS-OBRA (DINÂMICO) */}
 {/* ===================== */}
-{data.chavesForma === "posConstrutora" && (
-  <Card title="📆 Pagamento Pós-Chaves" icon="📆">
-    <div className="grid grid-cols-2 gap-3">
-      <Input
-        label="Valor Extra Pós-Chaves (R$)"
-        value={data.chavesExtraValor}
-        onChange={(e) => setData({ ...data, chavesExtraValor: currencyToNumber(e.target.value) })}
-        currency
-      />
-      <Input
-        label="Nº Parcelas Pós-Chaves"
-        value={data.chavesPosParcelas}
-        onChange={(e) => setData({ ...data, chavesPosParcelas: e.target.value })}
-      />
-    </div>
+{data.chavesForma === "diretoConstrutora" && (
+  <Card title="📆 Pagamento Pós-Obra (Direto com Construtora)" icon="📆">
+    {(() => {
+      const total = Number(data.valorTotal) || 0;
+      const ato = Number(data.entradaValor) || 0;
+      const parcelas =
+        (Number(data.obraParcelaValor) || 0) *
+        (Number(data.duranteObraParcelas) || 0);
+      const baloes =
+        (Number(data.balaoValor) || 0) * (Number(data.balaoQuantidade) || 0);
+      const totalPago = ato + parcelas + baloes;
 
-    <div className="grid grid-cols-3 gap-3 mt-4">
-      <Input
-        label="Valor Balão Pós-Chaves (R$)"
-        value={data.posBalaoValor}
-        onChange={(e) => setData({ ...data, posBalaoValor: currencyToNumber(e.target.value) })}
-        currency
-      />
-      <Input
-        label="Quantidade de Balões"
-        value={data.posBalaoQuantidade}
-        onChange={(e) => setData({ ...data, posBalaoQuantidade: e.target.value })}
-      />
-      <Input
-        label="Frequência (meses)"
-        value={data.posBalaoFrequenciaMeses}
-        onChange={(e) => setData({ ...data, posBalaoFrequenciaMeses: e.target.value })}
-      />
-    </div>
+      const saldoRestante = Math.max(0, total - totalPago);
+
+      return (
+        <>
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Saldo Restante (calculado)"
+              value={brl(saldoRestante)}
+              readOnly
+            />
+            <Input
+              label="Parcelas Pós-Obra"
+              value={data.chavesPosParcelas}
+              onChange={(e) =>
+                setData({ ...data, chavesPosParcelas: e.target.value })
+              }
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 mt-4">
+            <Input
+              label="Balão Pós-Obra (R$)"
+              value={data.posBalaoValor}
+              onChange={(e) =>
+                setData({
+                  ...data,
+                  posBalaoValor: currencyToNumber(e.target.value),
+                })
+              }
+              currency
+            />
+            <Input
+              label="Qtd. de Balões"
+              value={data.posBalaoQuantidade}
+              onChange={(e) =>
+                setData({
+                  ...data,
+                  posBalaoQuantidade: e.target.value,
+                })
+              }
+            />
+            <Input
+              label="Frequência (meses)"
+              value={data.posBalaoFrequenciaMeses}
+              onChange={(e) =>
+                setData({
+                  ...data,
+                  posBalaoFrequenciaMeses: e.target.value,
+                })
+              }
+            />
+          </div>
+
+          <div className="mt-6 p-4 bg-slate-50 border rounded-xl">
+            <p className="text-sm text-gray-600">
+              💬 Valor restante calculado automaticamente com base no total do
+              imóvel e nos pagamentos feitos durante a obra.
+            </p>
+          </div>
+        </>
+      );
+    })()}
   </Card>
 )}
-
 
           <Card title="Análise de Investimento" icon="📊">
             <Input
