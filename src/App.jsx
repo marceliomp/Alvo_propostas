@@ -59,7 +59,7 @@ const PageHeader = ({ data, title = "Proposta de Investimento Imobiliário", sub
   return (
     <header className="flex flex-wrap items-start justify-between gap-6 pb-6 border-b border-slate-200">
       <div className="flex items-start gap-4 flex-1 min-w-[220px]">
-        <AlvoLogo size={100} />
+        <AlvoLogo size={80} />
         <div>
           <h2 className="text-xl font-semibold text-slate-800 leading-tight">{title}</h2>
           <p className="text-sm text-gray-500 mt-1">{headerSubtitle}</p>
@@ -390,7 +390,7 @@ export default function App() {
       <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 p-6">
         <div className="max-w-5xl mx-auto space-y-6">
           <div className="text-center space-y-3 py-6">
-            <AlvoLogo size={80} />
+            <AlvoLogo size={120} />
             <h1 className="text-4xl font-bold text-[#003B46]">Simulador de Proposta Imobiliária</h1>
             <p className="text-lg text-[#0E7C7B]">Preencha os dados abaixo e gere a proposta completa em PDF</p>
           </div>
