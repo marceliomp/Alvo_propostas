@@ -395,7 +395,7 @@ export default function App() {
             <p className="text-lg text-[#0E7C7B]">Preencha os dados abaixo e gere a proposta completa em PDF</p>
           </div>
 
-          <Card title="📋 Dados da Empresa" icon="📋">
+          <Card title="Dados da Empresa" icon="📋">
             <Input
               label="Nome da Empresa"
               value={data.company}
@@ -410,7 +410,7 @@ export default function App() {
             <Input label="E-mail" value={data.email} onChange={(e) => setData({ ...data, email: e.target.value })} />
           </Card>
 
-          <Card title="👤 Dados do Cliente" icon="👤">
+          <Card title="Dados do Cliente" icon="👤">
             <Input
               label="Nome do Cliente"
               value={data.cliente}
@@ -428,7 +428,7 @@ export default function App() {
             />
           </Card>
 
-          <Card title="🏢 Dados do Empreendimento" icon="🏢">
+          <Card title="Dados do Empreendimento" icon="🏢">
             <Input
               label="Nome do Empreendimento"
               value={data.empreendimento}
@@ -464,117 +464,146 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="💰 Valores e Pagamento" icon="💰">
-            <Input
-              label="Valor Total"
-              value={data.valorTotal}
-              onChange={(e) => setData({ ...data, valorTotal: currencyToNumber(e.target.value) })}
-              currency
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Entrada (R$)"
-                value={data.entradaValor}
-                onChange={(e) => setData({ ...data, entradaValor: currencyToNumber(e.target.value) })}
-                currency
-              />
-              <Input
-                label="Parcelas da Entrada"
-                value={data.entradaParcelas}
-                onChange={(e) => setData({ ...data, entradaParcelas: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Valor Parcela Durante Obra"
-                value={data.obraParcelaValor}
-                onChange={(e) => setData({ ...data, obraParcelaValor: currencyToNumber(e.target.value) })}
-                currency
-              />
-              <Input
-                label="Nº Parcelas Durante Obra"
-                value={data.duranteObraParcelas}
-                onChange={(e) => setData({ ...data, duranteObraParcelas: e.target.value })}
-              />
-            </div>
-            <Input
-              label="Prazo da Obra (anos)"
-              value={data.prazoObraAnos}
-              onChange={(e) => setData({ ...data, prazoObraAnos: e.target.value })}
-            />
-            <div className="space-y-3">
-              <label className="block">
-                <div className="text-sm font-medium text-[#003B46] mb-2">Forma de Pagamento nas Chaves</div>
-                <select
-                  className="w-full px-4 py-3 rounded-lg border-2 border-[#0E7C7B]/30 bg-white text-[#003B46] focus:outline-none focus:ring-2 focus:ring-[#0E7C7B] focus:border-[#0E7C7B] transition-all"
-                  value={data.chavesForma}
-                  onChange={(e) => setData({ ...data, chavesForma: e.target.value })}
-                >
-                  <option value="financiamento">Financiamento Bancário</option>
-                  <option value="posConstrutora">Pós-Obra Direto com Construtora</option>
-                </select>
-              </label>
-              <Input
-                label="Valor nas Chaves (R$)"
-                value={data.chavesValor}
-                onChange={(e) => setData({ ...data, chavesValor: currencyToNumber(e.target.value) })}
-                currency
-              />
-              {data.chavesForma === "posConstrutora" && (
-                <>
-                  <Input
-                    label="Valor Extra a Pagar (Intermediário/Chaves)"
-                    value={data.chavesExtraValor}
-                    onChange={(e) => setData({ ...data, chavesExtraValor: currencyToNumber(e.target.value) })}
-                    currency
-                  />
-                  <Input
-                    label="Nº de Parcelas Pós-Chaves (Construtora)"
-                    value={data.chavesPosParcelas}
-                    onChange={(e) => setData({ ...data, chavesPosParcelas: e.target.value })}
-                  />
-                  <div className="grid grid-cols-3 gap-3">
-                    <Input
-                      label="Valor Balão Pós-Chaves"
-                      value={data.posBalaoValor}
-                      onChange={(e) => setData({ ...data, posBalaoValor: currencyToNumber(e.target.value) })}
-                      currency
-                    />
-                    <Input
-                      label="Quantidade de Balões"
-                      value={data.posBalaoQuantidade}
-                      onChange={(e) => setData({ ...data, posBalaoQuantidade: e.target.value })}
-                    />
-                    <Input
-                      label="Frequência (meses)"
-                      value={data.posBalaoFrequenciaMeses}
-                      onChange={(e) => setData({ ...data, posBalaoFrequenciaMeses: e.target.value })}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <Input
-                label="Valor do Balão Durante Obra"
-                value={data.balaoValor}
-                onChange={(e) => setData({ ...data, balaoValor: currencyToNumber(e.target.value) })}
-                currency
-              />
-              <Input
-                label="Quantidade de Balões"
-                value={data.balaoQuantidade}
-                onChange={(e) => setData({ ...data, balaoQuantidade: e.target.value })}
-              />
-              <Input
-                label="Frequência (meses)"
-                value={data.balaoFrequenciaMeses}
-                onChange={(e) => setData({ ...data, balaoFrequenciaMeses: e.target.value })}
-              />
-            </div>
-          </Card>
+{/* ===================== */}
+{/* 💰 PAGAMENTO DURANTE A OBRA */}
+{/* ===================== */}
+<Card title="💰 Pagamento Durante a Obra" icon="💰">
+  <Input
+    label="Valor Total do Imóvel (R$)"
+    value={data.valorTotal}
+    onChange={(e) => setData({ ...data, valorTotal: currencyToNumber(e.target.value) })}
+    currency
+  />
+  <div className="grid grid-cols-2 gap-3 mt-3">
+    <Input
+      label="Entrada / Ato (R$)"
+      value={data.entradaValor}
+      onChange={(e) => setData({ ...data, entradaValor: currencyToNumber(e.target.value) })}
+      currency
+    />
+    <Input
+      label="Parcelas da Entrada"
+      value={data.entradaParcelas}
+      onChange={(e) => setData({ ...data, entradaParcelas: e.target.value })}
+    />
+  </div>
 
-          <Card title="📊 Análise de Investimento" icon="📊">
+  <div className="grid grid-cols-2 gap-3 mt-4">
+    <Input
+      label="Valor Parcela Durante Obra (R$)"
+      value={data.obraParcelaValor}
+      onChange={(e) => setData({ ...data, obraParcelaValor: currencyToNumber(e.target.value) })}
+      currency
+    />
+    <Input
+      label="Nº Parcelas Durante Obra"
+      value={data.duranteObraParcelas}
+      onChange={(e) => setData({ ...data, duranteObraParcelas: e.target.value })}
+    />
+  </div>
+
+  <div className="mt-4">
+    <Input
+      label="Prazo da Obra (anos)"
+      value={data.prazoObraAnos}
+      onChange={(e) => setData({ ...data, prazoObraAnos: e.target.value })}
+    />
+  </div>
+
+  <div className="grid grid-cols-3 gap-3 mt-4">
+    <Input
+      label="Valor do Balão Durante Obra (R$)"
+      value={data.balaoValor}
+      onChange={(e) => setData({ ...data, balaoValor: currencyToNumber(e.target.value) })}
+      currency
+    />
+    <Input
+      label="Quantidade de Balões"
+      value={data.balaoQuantidade}
+      onChange={(e) => setData({ ...data, balaoQuantidade: e.target.value })}
+    />
+    <Input
+      label="Frequência (meses)"
+      value={data.balaoFrequenciaMeses}
+      onChange={(e) => setData({ ...data, balaoFrequenciaMeses: e.target.value })}
+    />
+  </div>
+</Card>
+
+{/* ===================== */}
+{/* 🔑 FINANCIAMENTO OU CHAVES */}
+{/* ===================== */}
+<Card title="🔑 Financiamento ou Pagamento nas Chaves" icon="🔑">
+  <label className="block">
+    <div className="text-sm font-medium text-[#003B46] mb-2">Forma de Pagamento</div>
+    <select
+      className="w-full px-4 py-3 rounded-lg border-2 border-[#0E7C7B]/30 bg-white text-[#003B46] focus:outline-none focus:ring-2 focus:ring-[#0E7C7B] focus:border-[#0E7C7B] transition-all"
+      value={data.chavesForma}
+      onChange={(e) => setData({ ...data, chavesForma: e.target.value })}
+    >
+      <option value="financiamento">Financiamento Bancário</option>
+      <option value="posConstrutora">Pós-Obra Direto com Construtora</option>
+    </select>
+  </label>
+
+  <div className="grid grid-cols-2 gap-3 mt-4">
+    <Input
+      label="Valor nas Chaves (R$)"
+      value={data.chavesValor}
+      onChange={(e) => setData({ ...data, chavesValor: currencyToNumber(e.target.value) })}
+      currency
+    />
+    <Input
+      label="Valor Financiado (R$)"
+      value={data.valorFinanciado}
+      onChange={(e) => setData({ ...data, valorFinanciado: currencyToNumber(e.target.value) })}
+      currency
+    />
+  </div>
+</Card>
+
+{/* ===================== */}
+{/* 📆 PAGAMENTO PÓS-CHAVES */}
+{/* ===================== */}
+{data.chavesForma === "posConstrutora" && (
+  <Card title="📆 Pagamento Pós-Chaves" icon="📆">
+    <div className="grid grid-cols-2 gap-3">
+      <Input
+        label="Valor Extra Pós-Chaves (R$)"
+        value={data.chavesExtraValor}
+        onChange={(e) => setData({ ...data, chavesExtraValor: currencyToNumber(e.target.value) })}
+        currency
+      />
+      <Input
+        label="Nº Parcelas Pós-Chaves"
+        value={data.chavesPosParcelas}
+        onChange={(e) => setData({ ...data, chavesPosParcelas: e.target.value })}
+      />
+    </div>
+
+    <div className="grid grid-cols-3 gap-3 mt-4">
+      <Input
+        label="Valor Balão Pós-Chaves (R$)"
+        value={data.posBalaoValor}
+        onChange={(e) => setData({ ...data, posBalaoValor: currencyToNumber(e.target.value) })}
+        currency
+      />
+      <Input
+        label="Quantidade de Balões"
+        value={data.posBalaoQuantidade}
+        onChange={(e) => setData({ ...data, posBalaoQuantidade: e.target.value })}
+      />
+      <Input
+        label="Frequência (meses)"
+        value={data.posBalaoFrequenciaMeses}
+        onChange={(e) => setData({ ...data, posBalaoFrequenciaMeses: e.target.value })}
+      />
+    </div>
+  </Card>
+)}
+
+
+          <Card title="Análise de Investimento" icon="📊">
             <Input
               label="Apreciação Esperada (%)"
               value={data.apreciacao}
@@ -597,7 +626,7 @@ export default function App() {
             />
           </Card>
 
-          <Card title="📆 Validade e Data" icon="📆">
+          <Card title="Validade e Data" icon="📆">
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="Data da Proposta"
@@ -612,7 +641,7 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="📈 Comparativos de Investimento" icon="📈">
+          <Card title="Comparativos de Investimento" icon="📈">
             <div className="space-y-4">
               {data.comparativos?.map((cmp, idx) => (
                 <div key={cmp.id} className="p-4 border-2 border-[#0E7C7B]/20 rounded-lg bg-white/50 space-y-3">
