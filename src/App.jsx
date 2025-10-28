@@ -58,7 +58,7 @@ const PageHeader = ({ data, title = "Proposta de Investimento Imobiliário", sub
 
   return (
     <header className="flex flex-wrap items-start justify-between gap-6 pb-6 border-b border-slate-200">
-      <"flex items-start gap-4 flex-1 min-w-[220px]">
+      <div className="flex items-start gap-4 flex-1 min-w-[220px]">
         <AlvoLogo size={80} />
         <div>
           <h2 className="text-xl font-semibold text-slate-800 leading-tight">{title}</h2>
