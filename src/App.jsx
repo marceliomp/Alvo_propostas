@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import alvoLogo from "./assets/alvo-logo.png";
 
+// Adicione isto no seu public/index.html na tag <head>:
+// <link rel="icon" href="%PUBLIC_URL%/favicon.png" />
+
 const palette = {
   petrolBlue: "#003B46",
   petrolBlueDark: "#021F26",
@@ -13,17 +16,11 @@ const palette = {
 /********************
  * Utils
  ********************/
-const brl = (n) =>
-  Number(n ?? 0).toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-
+const brl = (n) => Number(n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const pct = (n) => {
   const num = Number.isFinite(Number(n)) ? Number(n) : 0;
   return num.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
 };
-
 const currencyToNumber = (s) => {
   if (typeof s === "number") return s;
   if (!s) return 0;
@@ -35,41 +32,26 @@ const currencyToNumber = (s) => {
 const formatDate = (value) => {
   if (!value) return "—";
   const date = new Date(value);
-  return Number.isFinite(date.getTime())
-    ? date.toLocaleDateString("pt-BR")
-    : "—";
+  return Number.isFinite(date.getTime()) ? date.toLocaleDateString("pt-BR") : "—";
 };
 
 /********************
  * Logo Real da Alvo BR
  ********************/
-const AlvoLogo = ({ size = 48, className = "" }) => {
+const AlvoLogo = ({ size = 100, className = "" }) => {
   const classes = ["alvo-logo", className].filter(Boolean).join(" ");
   return (
     <img
       src={alvoLogo}
       className={classes}
-      style={{
-        height: size,
-        width: "auto",
-        maxWidth: "100%",
-        objectFit: "contain",
-        display: "inline-block",
-      }}
+      style={{ height: size, width: "auto", maxWidth: "100%", objectFit: "contain", display: "inline-block" }}
       alt="Alvo BR"
       loading="eager"
     />
   );
 };
 
-/********************
- * Cabeçalho da Página
- ********************/
-const PageHeader = ({
-  data,
-  title = "Proposta de Investimento Imobiliário",
-  subtitle,
-}) => {
+const PageHeader = ({ data, title = "Proposta de Investimento Imobiliário", subtitle }) => {
   const company = data.company || "—";
   const consultor = data.consultor || "Consultor";
   const headerSubtitle = subtitle || `Elaborada por ${company} · ${consultor}`;
@@ -77,24 +59,27 @@ const PageHeader = ({
   return (
     <header className="flex flex-wrap items-start justify-between gap-6 pb-6 border-b border-slate-200">
       <div className="flex items-start gap-4 flex-1 min-w-[220px]">
-        <AlvoLogo size={64} />
+        <AlvoLogo size={80} />
         <div>
-          <h2 className="text-xl font-semibold text-slate-800 leading-tight">
-            {title}
-          </h2>
+          <h2 className="text-xl font-semibold text-slate-800 leading-tight">{title}</h2>
           <p className="text-sm text-gray-500 mt-1">{headerSubtitle}</p>
         </div>
+      </div>
+      <div className="text-sm text-right text-gray-500 space-y-1 min-w-[180px]">
+        <p>Data: {formatDate(data.date)}</p>
+        <p>Validade: {formatDate(data.validade)}</p>
+        <p>Telefone: {data.phone || "—"}</p>
+        <p>E-mail: {data.email || "—"}</p>
       </div>
     </header>
   );
 };
 
-export { palette, brl, pct, currencyToNumber, formatDate, AlvoLogo, PageHeader };
-
 const PageFooter = ({ data, children }) => {
   const company = data.company || "Alvo BR";
-  const phone = data.phone ? \` · \${data.phone}\` : "";
-  const email = data.email ? \` · \${data.email}\` : "";
+  const phone = data.phone ? ` · ${data.phone}` : "";
+  const email = data.email ? ` · ${data.email}` : "";  // 
+
 
   return (
     <footer className="pt-6 mt-6 border-t border-dashed border-slate-200 space-y-2 text-[11px] text-gray-500 leading-5">
@@ -133,7 +118,7 @@ function loadScript(src) {
 /********************
  * Defaults
  ********************/
-const generateComparativoId = () => \`cmp-\${Math.random().toString(36).slice(2, 10)}\`;
+const generateComparativoId = () => `cmp-${Math.random().toString(36).slice(2, 10)}`;
 
 const createComparativo = (overrides = {}) => ({
   id: generateComparativoId(),
@@ -293,11 +278,8 @@ export default function App() {
     const posChavesValor = posChavesParcelas > 0 ? (totalPosConstrutora - posBalaoTotal) / posChavesParcelas : 0;
 
     const prazoObra = Number(data.prazoObraAnos) || 0;
-    const valorizacaoAnual = Number(data.valorizacaoAnual) || 0;
-    const anosObra = Number(data.prazoObraAnos) || 0;
-    const fatorValorizacao = Math.pow(1 + valorizacaoAnual / 100, anosObra);
-    const valorEntrega = total * fatorValorizacao;
-    const valorizacaoTotalPercent = (fatorValorizacao - 1) * 100;
+    const apreciacao = Number(data.apreciacao) || 0;
+    const valorEntrega = total * (1 + apreciacao / 100);
     const investimento = totalAteChaves;
     const entregaLiq = valorEntrega - totalFinanciado - totalShortStay - posBalaoTotal - totalPosConstrutora;
     const lucro = entregaLiq - investimento;
@@ -400,20 +382,20 @@ export default function App() {
       if (i > 0) pdf.addPage();
       pdf.addImage(imgData, "PNG", 10, 10, imgW, imgH);
     }
-    pdf.save(\`proposta-\${data.empreendimento || "imovel"}.pdf\`);
+    pdf.save(`proposta-${data.empreendimento || "imovel"}.pdf`);
   };
 
   if (step === "setup") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 p-6">
         <div className="max-w-5xl mx-auto space-y-6">
-          <div className="text-center space-y-2 py-4">
-            <AlvoLogo size={80} />
-            <h1 className="text-3xl font-bold text-[color:var(--petrol-blue)]">Simulador de Proposta Imobiliária</h1>
-            <p className="text-gray-600">Preencha os dados abaixo e gere a proposta completa em PDF</p>
+          <div className="text-center space-y-3 py-6">
+            <AlvoLogo size={120} />
+            <h1 className="text-4xl font-bold text-[#003B46]">Simulador de Proposta Imobiliária</h1>
+            <p className="text-lg text-[#0E7C7B]">Preencha os dados abaixo e gere a proposta completa em PDF</p>
           </div>
 
-          <Card title="📋 Dados da Empresa">
+          <Card title="Dados da Empresa" icon="📋">
             <Input
               label="Nome da Empresa"
               value={data.company}
@@ -428,7 +410,7 @@ export default function App() {
             <Input label="E-mail" value={data.email} onChange={(e) => setData({ ...data, email: e.target.value })} />
           </Card>
 
-          <Card title="👤 Dados do Cliente">
+          <Card title="Dados do Cliente" icon="👤">
             <Input
               label="Nome do Cliente"
               value={data.cliente}
@@ -446,7 +428,7 @@ export default function App() {
             />
           </Card>
 
-          <Card title="🏢 Dados do Empreendimento">
+          <Card title="Dados do Empreendimento" icon="🏢">
             <Input
               label="Nome do Empreendimento"
               value={data.empreendimento}
@@ -482,126 +464,151 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="💰 Valores e Pagamento">
-            <Input
-              label="Valor Total"
-              value={data.valorTotal}
-              onChange={(e) => setData({ ...data, valorTotal: currencyToNumber(e.target.value) })}
-              currency
-            />
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Entrada (R$)"
-                value={data.entradaValor}
-                onChange={(e) => setData({ ...data, entradaValor: currencyToNumber(e.target.value) })}
-                currency
-              />
-              <Input
-                label="Parcelas da Entrada"
-                value={data.entradaParcelas}
-                onChange={(e) => setData({ ...data, entradaParcelas: e.target.value })}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                label="Valor Parcela Durante Obra"
-                value={data.obraParcelaValor}
-                onChange={(e) => setData({ ...data, obraParcelaValor: currencyToNumber(e.target.value) })}
-                currency
-              />
-              <Input
-                label="Nº Parcelas Durante Obra"
-                value={data.duranteObraParcelas}
-                onChange={(e) => setData({ ...data, duranteObraParcelas: e.target.value })}
-              />
-            </div>
-            <Input
-              label="Prazo da Obra (anos)"
-              value={data.prazoObraAnos}
-              onChange={(e) => setData({ ...data, prazoObraAnos: e.target.value })}
-            />
-            <div className="space-y-3">
-              <label className="block">
-                <div className="text-xs text-gray-600 mb-1">Forma de Pagamento nas Chaves</div>
-                <select
-                  className="w-full px-3 py-2 rounded-xl border border-[rgba(0,59,70,0.2)] bg-white text-[color:var(--petrol-black)] focus:outline-none focus:ring-2 focus:ring-[rgba(14,124,123,0.35)] focus:border-[rgba(14,124,123,0.55)]"
-                  value={data.chavesForma}
-                  onChange={(e) => setData({ ...data, chavesForma: e.target.value })}
-                >
-                  <option value="financiamento">Financiamento Bancário</option>
-                  <option value="posConstrutora">Pós-Obra Direto com Construtora</option>
-                </select>
-              </label>
-              <Input
-                label="Valor nas Chaves (R$)"
-                value={data.chavesValor}
-                onChange={(e) => setData({ ...data, chavesValor: currencyToNumber(e.target.value) })}
-                currency
-              />
-              <div className="text-xs text-gray-500 px-3">
-                {calc.chavesPercent > 0 && \`Representa \${pct(calc.chavesPercent)} do valor total\`}
-              </div>
-              {data.chavesForma === "posConstrutora" && (
-                <>
-                  <Input
-                    label="Valor Extra a Pagar (Intermediário/Chaves)"
-                    value={data.chavesExtraValor}
-                    onChange={(e) => setData({ ...data, chavesExtraValor: currencyToNumber(e.target.value) })}
-                    currency
-                  />
-                  <Input
-                    label="Nº de Parcelas Pós-Chaves (Construtora)"
-                    value={data.chavesPosParcelas}
-                    onChange={(e) => setData({ ...data, chavesPosParcelas: e.target.value })}
-                  />
-                  <div className="grid grid-cols-3 gap-3">
-                    <Input
-                      label="Valor Balão Pós-Chaves"
-                      value={data.posBalaoValor}
-                      onChange={(e) => setData({ ...data, posBalaoValor: currencyToNumber(e.target.value) })}
-                      currency
-                    />
-                    <Input
-                      label="Quantidade de Balões"
-                      value={data.posBalaoQuantidade}
-                      onChange={(e) => setData({ ...data, posBalaoQuantidade: e.target.value })}
-                    />
-                    <Input
-                      label="Frequência (meses)"
-                      value={data.posBalaoFrequenciaMeses}
-                      onChange={(e) => setData({ ...data, posBalaoFrequenciaMeses: e.target.value })}
-                    />
-                  </div>
-                </>
-              )}
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <Input
-                label="Valor do Balão Durante Obra"
-                value={data.balaoValor}
-                onChange={(e) => setData({ ...data, balaoValor: currencyToNumber(e.target.value) })}
-                currency
-              />
-              <Input
-                label="Quantidade de Balões"
-                value={data.balaoQuantidade}
-                onChange={(e) => setData({ ...data, balaoQuantidade: e.target.value })}
-              />
-              <Input
-                label="Frequência (meses)"
-                value={data.balaoFrequenciaMeses}
-                onChange={(e) => setData({ ...data, balaoFrequenciaMeses: e.target.value })}
-              />
-            </div>
-          </Card>
+{/* ===================== */}
+{/* 💰 PAGAMENTO DURANTE A OBRA */}
+{/* ===================== */}
+<Card title="💰 Pagamento Durante a Obra" icon="💰">
+  <Input
+    label="Valor Total do Imóvel (R$)"
+    value={data.valorTotal}
+    onChange={(e) => setData({ ...data, valorTotal: currencyToNumber(e.target.value) })}
+    currency
+  />
+  <div className="grid grid-cols-2 gap-3 mt-3">
+    <Input
+      label="Entrada / Ato (R$)"
+      value={data.entradaValor}
+      onChange={(e) => setData({ ...data, entradaValor: currencyToNumber(e.target.value) })}
+      currency
+    />
+    <Input
+      label="Parcelas da Entrada"
+      value={data.entradaParcelas}
+      onChange={(e) => setData({ ...data, entradaParcelas: e.target.value })}
+    />
+  </div>
 
-          <Card title="📊 Análise de Investimento">
+  <div className="grid grid-cols-2 gap-3 mt-4">
+    <Input
+      label="Valor Parcela Durante Obra (R$)"
+      value={data.obraParcelaValor}
+      onChange={(e) => setData({ ...data, obraParcelaValor: currencyToNumber(e.target.value) })}
+      currency
+    />
+    <Input
+      label="Nº Parcelas Durante Obra"
+      value={data.duranteObraParcelas}
+      onChange={(e) => setData({ ...data, duranteObraParcelas: e.target.value })}
+    />
+  </div>
+
+  <div className="mt-4">
+    <Input
+      label="Prazo da Obra (anos)"
+      value={data.prazoObraAnos}
+      onChange={(e) => setData({ ...data, prazoObraAnos: e.target.value })}
+    />
+  </div>
+
+  <div className="grid grid-cols-3 gap-3 mt-4">
+    <Input
+      label="Valor do Balão Durante Obra (R$)"
+      value={data.balaoValor}
+      onChange={(e) => setData({ ...data, balaoValor: currencyToNumber(e.target.value) })}
+      currency
+    />
+    <Input
+      label="Quantidade de Balões"
+      value={data.balaoQuantidade}
+      onChange={(e) => setData({ ...data, balaoQuantidade: e.target.value })}
+    />
+    <Input
+      label="Frequência (meses)"
+      value={data.balaoFrequenciaMeses}
+      onChange={(e) => setData({ ...data, balaoFrequenciaMeses: e.target.value })}
+    />
+  </div>
+</Card>
+
+{/* ===================== */}
+{/* 🔑 FINANCIAMENTO OU CHAVES */}
+{/* ===================== */}
+<Card title="🔑 Financiamento ou Pagamento nas Chaves" icon="🔑">
+  <label className="block">
+    <div className="text-sm font-medium text-[#003B46] mb-2">Forma de Pagamento</div>
+    <select
+      className="w-full px-4 py-3 rounded-lg border-2 border-[#0E7C7B]/30 bg-white text-[#003B46] focus:outline-none focus:ring-2 focus:ring-[#0E7C7B] focus:border-[#0E7C7B] transition-all"
+      value={data.chavesForma}
+      onChange={(e) => setData({ ...data, chavesForma: e.target.value })}
+    >
+      <option value="financiamento">Financiamento Bancário</option>
+      <option value="posConstrutora">Pós-Obra Direto com Construtora</option>
+    </select>
+  </label>
+
+  <div className="grid grid-cols-2 gap-3 mt-4">
+    <Input
+      label="Valor nas Chaves (R$)"
+      value={data.chavesValor}
+      onChange={(e) => setData({ ...data, chavesValor: currencyToNumber(e.target.value) })}
+      currency
+    />
+    <Input
+      label="Valor Financiado (R$)"
+      value={data.valorFinanciado}
+      onChange={(e) => setData({ ...data, valorFinanciado: currencyToNumber(e.target.value) })}
+      currency
+    />
+  </div>
+</Card>
+
+{/* ===================== */}
+{/* 📆 PAGAMENTO PÓS-CHAVES */}
+{/* ===================== */}
+{data.chavesForma === "posConstrutora" && (
+  <Card title="📆 Pagamento Pós-Chaves" icon="📆">
+    <div className="grid grid-cols-2 gap-3">
+      <Input
+        label="Valor Extra Pós-Chaves (R$)"
+        value={data.chavesExtraValor}
+        onChange={(e) => setData({ ...data, chavesExtraValor: currencyToNumber(e.target.value) })}
+        currency
+      />
+      <Input
+        label="Nº Parcelas Pós-Chaves"
+        value={data.chavesPosParcelas}
+        onChange={(e) => setData({ ...data, chavesPosParcelas: e.target.value })}
+      />
+    </div>
+
+    <div className="grid grid-cols-3 gap-3 mt-4">
+      <Input
+        label="Valor Balão Pós-Chaves (R$)"
+        value={data.posBalaoValor}
+        onChange={(e) => setData({ ...data, posBalaoValor: currencyToNumber(e.target.value) })}
+        currency
+      />
+      <Input
+        label="Quantidade de Balões"
+        value={data.posBalaoQuantidade}
+        onChange={(e) => setData({ ...data, posBalaoQuantidade: e.target.value })}
+      />
+      <Input
+        label="Frequência (meses)"
+        value={data.posBalaoFrequenciaMeses}
+        onChange={(e) => setData({ ...data, posBalaoFrequenciaMeses: e.target.value })}
+      />
+    </div>
+  </Card>
+)}
+
+
+          <Card title="Análise de Investimento" icon="📊">
             <Input
-              label="Valorização Anual (%)"
-              value={data.valorizacaoAnual}
-              onChange={(e) => setData({ ...data, valorizacaoAnual: e.target.value })}
+              label="Apreciação Esperada (%)"
+              value={data.apreciacao}
+              onChange={(e) => setData({ ...data, apreciacao: e.target.value })}
             />
-        
             <Input
               label="ADR Diária (R$)"
               value={data.adrDiaria}
@@ -619,7 +626,7 @@ export default function App() {
             />
           </Card>
 
-          <Card title="📆 Validade e Data">
+          <Card title="Validade e Data" icon="📆">
             <div className="grid grid-cols-2 gap-3">
               <Input
                 label="Data da Proposta"
@@ -634,14 +641,14 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="📈 Comparativos de Investimento">
+          <Card title="Comparativos de Investimento" icon="📈">
             <div className="space-y-4">
               {data.comparativos?.map((cmp, idx) => (
-                <div key={cmp.id} className="p-4 border border-slate-200 rounded-xl bg-slate-50 space-y-3">
+                <div key={cmp.id} className="p-4 border-2 border-[#0E7C7B]/20 rounded-lg bg-white/50 space-y-3">
                   <div className="flex items-center justify-between">
-                    <h5 className="font-semibold text-sm">Comparativo {idx + 1}</h5>
+                    <h5 className="font-semibold text-[#003B46]">Comparativo {idx + 1}</h5>
                     <button
-                      className="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded-lg"
+                      className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                       onClick={() => {
                         const updated = data.comparativos.filter((c) => c.id !== cmp.id);
                         setData({ ...data, comparativos: updated });
@@ -690,14 +697,14 @@ export default function App() {
                         );
                         setData({ ...data, comparativos: updated });
                       }}
-                      className="w-4 h-4"
+                      className="w-4 h-4 accent-[#0E7C7B]"
                     />
-                    <span className="text-xs text-gray-600">Destacar este investimento</span>
+                    <span className="text-sm text-[#003B46]">Destacar este investimento</span>
                   </label>
                 </div>
               ))}
               <button
-                className="w-full px-4 py-2 bg-emerald-50 text-emerald-700 rounded-xl hover:bg-emerald-100 font-medium"
+                className="w-full px-4 py-3 bg-[#0E7C7B]/10 text-[#0E7C7B] rounded-lg hover:bg-[#0E7C7B]/20 font-semibold transition-colors border-2 border-[#0E7C7B]/30"
                 onClick={() => {
                   setData({
                     ...data,
@@ -712,45 +719,28 @@ export default function App() {
 
           <div className="flex gap-3">
             <button
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-emerald-700 to-emerald-800 text-white rounded-xl font-semibold hover:from-emerald-800 hover:to-emerald-900"
+              className="flex-1 px-8 py-4 bg-gradient-to-r from-[#0E7C7B] to-[#139C95] text-white rounded-xl font-bold text-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
               onClick={() => setStep("result")}
             >
-              Gerar Proposta
+              ✨ Gerar Proposta
             </button>
           </div>
         </div>
-        <style>{\`
+        <style>{`
           :root {
-            --petrol-blue: \${palette.petrolBlue};
-            --petrol-blue-dark: \${palette.petrolBlueDark};
-            --petrol-green: \${palette.petrolGreen};
-            --petrol-green-light: \${palette.petrolGreenLight};
-            --petrol-black: \${palette.black};
-            --petrol-white: \${palette.white};
+            --petrol-blue: ${palette.petrolBlue};
+            --petrol-blue-dark: ${palette.petrolBlueDark};
+            --petrol-green: ${palette.petrolGreen};
+            --petrol-green-light: ${palette.petrolGreenLight};
+            --petrol-black: ${palette.black};
+            --petrol-white: ${palette.white};
           }
-          body { font-family: Inter, system-ui, -apple-system, sans-serif; color: var(--petrol-black); }
-          .theme-card {
-            background: white;
-            border-radius: 1rem;
-            border: 1px solid rgba(0, 59, 70, 0.15);
-            overflow: hidden;
+          body { 
+            font-family: Inter, system-ui, -apple-system, sans-serif; 
+            color: var(--petrol-black);
+            background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 50%, #80cbc4 100%);
           }
-          .theme-card__header {
-            background: linear-gradient(135deg, rgba(0, 59, 70, 0.08) 0%, rgba(14, 124, 123, 0.08) 100%);
-            padding: 1rem 1.25rem;
-            border-bottom: 1px solid rgba(0, 59, 70, 0.12);
-          }
-          .theme-mini-card {
-            background: rgba(0, 59, 70, 0.06);
-            padding: 0.875rem;
-            border-radius: 0.75rem;
-            border: 1px solid rgba(0, 59, 70, 0.12);
-          }
-          .theme-mini-card--highlight {
-            background: rgba(14, 124, 123, 0.12);
-            border: 1px solid rgba(14, 124, 123, 0.3);
-          }
-        \`}</style>
+        `}</style>
       </div>
     );
   }
@@ -762,7 +752,7 @@ export default function App() {
       label: "ENTRADA",
       valor: calc.entradaValor,
       percentual: (calc.entradaValor / calc.total) * 100,
-      detalhe: data.entradaParcelas > 1 ? \`\${data.entradaParcelas}x\` : "À vista",
+      detalhe: data.entradaParcelas > 1 ? `${data.entradaParcelas}x` : "À vista",
     });
   }
   if (calc.duranteObraTotal > 0) {
@@ -771,7 +761,7 @@ export default function App() {
       label: "DURANTE A OBRA",
       valor: calc.duranteObraTotal,
       percentual: (calc.duranteObraTotal / calc.total) * 100,
-      detalhe: \`\${data.duranteObraParcelas}x de \${brl(data.obraParcelaValor)}\`,
+      detalhe: `${data.duranteObraParcelas}x de ${brl(data.obraParcelaValor)}`,
     });
   }
   if (calc.reforcosTotal > 0) {
@@ -780,7 +770,7 @@ export default function App() {
       label: "BALÃO (OBRA)",
       valor: calc.reforcosTotal,
       percentual: (calc.reforcosTotal / calc.total) * 100,
-      detalhe: \`\${data.balaoQuantidade}x de \${brl(data.balaoValor)}\`,
+      detalhe: `${data.balaoQuantidade}x de ${brl(data.balaoValor)}`,
     });
   }
   if (calc.totalChavesEntrega > 0) {
@@ -813,7 +803,7 @@ export default function App() {
         valor: calc.totalPosConstrutora - calc.posBalaoTotal,
         percentual: ((calc.totalPosConstrutora - calc.posBalaoTotal) / calc.total) * 100,
         contexto: "valor total",
-        detalhe: \`\${parcelasPos}x de \${brl(valorParcelaPos)}\`,
+        detalhe: `${parcelasPos}x de ${brl(valorParcelaPos)}`,
         destaque: true,
       });
     }
@@ -823,7 +813,7 @@ export default function App() {
         label: "BALÃO PÓS-CHAVES",
         valor: calc.posBalaoTotal,
         percentual: (calc.posBalaoTotal / calc.total) * 100,
-        detalhe: \`\${data.posBalaoQuantidade}x de \${brl(data.posBalaoValor)}\`,
+        detalhe: `${data.posBalaoQuantidade}x de ${brl(data.posBalaoValor)}`,
       });
     }
   }
@@ -907,7 +897,7 @@ export default function App() {
                 <DataRow k="Endereço" v={data.endereco} />
                 <DataRow k="Construtora" v={data.construtora} />
                 <DataRow k="Tipo" v={data.tipo} />
-                <DataRow k="Área Privativa" v={\`\${data.area} m²\`} />
+                <DataRow k="Área Privativa" v={`${data.area} m²`} />
                 <DataRow k="Vagas de Garagem" v={data.vagas} />
                 <DataRow k="Previsão de Entrega" v={data.entrega} />
                 <DataRow k="Preço por m²" v={brl(calc.precoM2)} />
@@ -923,7 +913,7 @@ export default function App() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <KPI title="Valor Total" value={brl(calc.total)} />
               <KPI title="Investimento Cliente" value={brl(calc.totalCliente)} highlight />
-              <KPI title="Saldo nas Chaves" value={brl(calc.chavesValor)} subValue={\`\${pct(calc.chavesPercent)} do total\`} />
+              <KPI title="Saldo nas Chaves" value={brl(calc.chavesValor)} subValue={calc.chavesPercent > 0 ? `${pct(calc.chavesPercent)} do valor total` : ""} />
               <KPI
                 title="Diferença"
                 value={brl(calc.saldoACompor)}
@@ -1008,7 +998,7 @@ export default function App() {
             <div>
               <h4 className="text-base font-bold text-[color:var(--petrol-blue)] mb-3">Premissas</h4>
               <div className="grid grid-cols-2 gap-3 text-sm">
-               <DataRow k="Valorização Anual" v={pct(data.valorizacaoAnual)} />
+                <DataRow k="Apreciação" v={pct(data.apreciacao)} />
                 <DataRow k="ADR Diária" v={brl(data.adrDiaria)} />
                 <DataRow k="Ocupação" v={pct(data.ocupacao)} />
                 <DataRow k="Custos Operacionais" v={pct(data.custosOperacionais)} />
@@ -1054,7 +1044,7 @@ export default function App() {
                     {comparativosCalc.map((cmp) => (
                       <tr
                         key={cmp.id}
-                        className={\`border-b border-slate-200 \${cmp.highlight ? "bg-blue-50 font-medium" : ""}\`}
+                        className={`border-b border-slate-200 ${cmp.highlight ? "bg-blue-50 font-medium" : ""}`}
                       >
                         <td className="p-3">{cmp.nome || "—"}</td>
                         <td className="p-3 text-center">{pct(cmp.taxaAnual)}</td>
@@ -1076,53 +1066,38 @@ export default function App() {
           )}
         </div>
       </div>
-      <style>{\`
+      <style>{`
         :root {
-          --petrol-blue: \${palette.petrolBlue};
-          --petrol-blue-dark: \${palette.petrolBlueDark};
-          --petrol-green: \${palette.petrolGreen};
-          --petrol-green-light: \${palette.petrolGreenLight};
-          --petrol-black: \${palette.black};
-          --petrol-white: \${palette.white};
+          --petrol-blue: ${palette.petrolBlue};
+          --petrol-blue-dark: ${palette.petrolBlueDark};
+          --petrol-green: ${palette.petrolGreen};
+          --petrol-green-light: ${palette.petrolGreenLight};
+          --petrol-black: ${palette.black};
+          --petrol-white: ${palette.white};
         }
-        body { font-family: Inter, system-ui, -apple-system, sans-serif; color: var(--petrol-black); }
-        .theme-card {
-          background: white;
-          border-radius: 1rem;
-          border: 1px solid rgba(0, 59, 70, 0.15);
-          overflow: hidden;
-        }
-        .theme-card__header {
-          background: linear-gradient(135deg, rgba(0, 59, 70, 0.08) 0%, rgba(14, 124, 123, 0.08) 100%);
-          padding: 1rem 1.25rem;
-          border-bottom: 1px solid rgba(0, 59, 70, 0.12);
-        }
-        .theme-mini-card {
-          background: rgba(0, 59, 70, 0.06);
-          padding: 0.875rem;
-          border-radius: 0.75rem;
-          border: 1px solid rgba(0, 59, 70, 0.12);
-        }
-        .theme-mini-card--highlight {
-          background: rgba(14, 124, 123, 0.12);
-          border: 1px solid rgba(14, 124, 123, 0.3);
+        body { 
+          font-family: Inter, system-ui, -apple-system, sans-serif; 
+          color: var(--petrol-black);
         }
         .page-break { page-break-before: always; margin-top: 8px; }
         .paper img { max-width: 100%; height: auto; }
         .paper * { line-height: 1.45; word-break: break-word; }
-      \`}</style>
+      `}</style>
     </div>
   );
 }
 
-// Componentes auxiliares (Input, Card, DataRow, KPI, FluxoResumoCards)
-function Card({ title, children }) {
+// Componentes auxiliares
+function Card({ title, icon, children }) {
   return (
-    <div className="theme-card">
-      <div className="theme-card__header">
-        <h4 className="font-semibold tracking-tight text-[color:var(--petrol-blue)]">{title}</h4>
+    <div className="bg-white rounded-2xl shadow-lg border-2 border-[#0E7C7B]/20 overflow-hidden">
+      <div className="bg-gradient-to-r from-[#003B46] to-[#0E7C7B] px-6 py-4">
+        <h4 className="font-bold text-white text-lg flex items-center gap-2">
+          {icon && <span>{icon}</span>}
+          {title}
+        </h4>
       </div>
-      <div className="p-5 space-y-3">{children}</div>
+      <div className="p-6 space-y-4">{children}</div>
     </div>
   );
 }
@@ -1175,9 +1150,9 @@ function Input({ label, value, onChange, placeholder, currency = false }) {
   const displayValue = currency ? typedValue : typedValue;
   return (
     <label className="block">
-      <div className="text-xs text-gray-600 mb-1">{label}</div>
+      <div className="text-sm font-medium text-[#003B46] mb-2">{label}</div>
       <input
-        className="w-full px-3 py-2 rounded-xl border border-[rgba(0,59,70,0.2)] bg-white text-[color:var(--petrol-black)] focus:outline-none focus:ring-2 focus:ring-[rgba(14,124,123,0.35)] focus:border-[rgba(14,124,123,0.55)]"
+        className="w-full px-4 py-3 rounded-lg border-2 border-[#0E7C7B]/30 bg-white text-[#003B46] focus:outline-none focus:ring-2 focus:ring-[#0E7C7B] focus:border-[#0E7C7B] transition-all"
         value={displayValue}
         onChange={handleChangeInternal}
         placeholder={placeholder}
@@ -1200,9 +1175,9 @@ function DataRow({ k, v }) {
 
 function KPI({ title, value, highlight, subValue }) {
   return (
-    <div className={\`theme-mini-card \${highlight ? "theme-mini-card--highlight" : ""}\`}>
-      <div className="text-xs text-gray-600 mb-1">{title}</div>
-      <div className="text-lg font-bold text-[color:var(--petrol-blue)]">{value}</div>
+    <div className={`p-4 rounded-lg border-2 ${highlight ? 'bg-gradient-to-br from-[#0E7C7B]/10 to-[#139C95]/10 border-[#0E7C7B]' : 'bg-slate-50 border-slate-200'}`}>
+      <div className="text-xs text-gray-600 mb-1 uppercase tracking-wide font-semibold">{title}</div>
+      <div className="text-xl font-bold text-[#003B46]">{value}</div>
       {subValue && <div className="text-[11px] text-gray-500 mt-1">{subValue}</div>}
     </div>
   );
@@ -1213,14 +1188,14 @@ function FluxoResumoCards({ items, columns = "grid grid-cols-1 sm:grid-cols-2 ga
   return (
     <div className={columns}>
       {items.map((item) => (
-        <div key={item.key} className={\`theme-mini-card \${item.destaque ? "theme-mini-card--highlight" : ""}\`}>
-          <div className="text-[11px] uppercase tracking-wide font-semibold">{item.label}</div>
-          <div className="text-base font-semibold">{brl(item.valor)}</div>
-          <div className="text-[11px]" style={{ color: item.destaque ? "var(--petrol-green)" : "rgba(0, 59, 70, 0.65)" }}>
-            {pct(item.percentual)} {item.contexto ? \`do \${item.contexto}\` : "do total"}
+        <div key={item.key} className={`p-4 rounded-lg border-2 ${item.destaque ? 'bg-gradient-to-br from-[#0E7C7B]/10 to-[#139C95]/10 border-[#0E7C7B]' : 'bg-slate-50 border-slate-200'}`}>
+          <div className="text-[11px] uppercase tracking-wide font-bold text-[#003B46]">{item.label}</div>
+          <div className="text-lg font-bold text-[#003B46]">{brl(item.valor)}</div>
+          <div className="text-xs" style={{ color: item.destaque ? "#0E7C7B" : "#6B7280" }}>
+            {pct(item.percentual)} {item.contexto ? `do ${item.contexto}` : "do total"}
           </div>
           {item.detalhe ? (
-            <div className="text-[11px]" style={{ color: item.destaque ? "rgba(14, 124, 123, 0.85)" : "rgba(0, 59, 70, 0.55)" }}>
+            <div className="text-xs" style={{ color: item.destaque ? "#0E7C7B" : "#9CA3AF" }}>
               {item.detalhe}
             </div>
           ) : null}
@@ -1229,136 +1204,3 @@ function FluxoResumoCards({ items, columns = "grid grid-cols-1 sm:grid-cols-2 ga
     </div>
   );
 }
-EOFALL
-cat /mnt/user-data/outputs/App-FINAL-COM-LOGO.jsx
-Saída
-
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import alvoLogo from "./assets/alvo-logo.png";
-
-const palette = {
-  petrolBlue: "#003B46",
-  petrolBlueDark: "#021F26",
-  petrolGreen: "#0E7C7B",
-  petrolGreenLight: "#139C95",
-  black: "#0B0D0E",
-  white: "#FFFFFF",
-};
-
-/********************
- * Utils
- ********************/
-const brl = (n) => Number(n ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-const pct = (n) => {
-  const num = Number.isFinite(Number(n)) ? Number(n) : 0;
-  return num.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + "%";
-};
-const currencyToNumber = (s) => {
-  if (typeof s === "number") return s;
-  if (!s) return 0;
-  const clean = s.toString().replace(/[R$\s\.]/g, "").replace(",", ".");
-  const num = parseFloat(clean);
-  return Number.isFinite(num) ? num : 0;
-};
-
-const formatDate = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isFinite(date.getTime()) ? date.toLocaleDateString("pt-BR") : "—";
-};
-
-/********************
- * Logo Real da Alvo BR
- ********************/
-const AlvoLogo = ({ size = 48, className = "" }) => {
-  const classes = ["alvo-logo", className].filter(Boolean).join(" ");
-  return (
-    <img
-      src={alvoLogo}
-      className={classes}
-      style={{ height: size, width: "auto", maxWidth: "100%", objectFit: "contain", display: "inline-block" }}
-      alt="Alvo BR"
-      loading="eager"
-    />
-  );
-};
-
-const PageHeader = ({ data, title = "Proposta de Investimento Imobiliário", subtitle }) => {
-  const company = data.company || "—";
-  const consultor = data.consultor || "Consultor";
-  const headerSubtitle = subtitle || \`Elaborada por \${company} · \${consultor}\`;
-
-  return (
-    <header className="flex flex-wrap items-start justify-between gap-6 pb-6 border-b border-slate-200">
-      <div className="flex items-start gap-4 flex-1 min-w-[220px]">
-        <AlvoLogo size={64} />
-        <div>
-          <h2 className="text-xl font-semibold text-slate-800 leading-tight">{title}</h2>
-          <p className="text-sm text-gray-500 mt-1">{headerSubtitle}</p>
-        </div>
-      </div>
-      <div className="text-sm text-right text-gray-500 space-y-1 min-w-[180px]">
-        <p>Data: {formatDate(data.date)}</p>
-        <p>Validade: {formatDate(data.validade)}</p>
-        <p>Telefone: {data.phone || "—"}</p>
-        <p>E-mail: {data.email || "—"}</p>
-      </div>
-    </header>
-  );
-};
-
-const PageFooter = ({ data, children }) => {
-  const company = data.company || "Alvo BR";
-  const phone = data.phone ? \` · \${data.phone}\` : "";
-  const email = data.email ? \` · \${data.email}\` : "";
-
-  return (
-    <footer className="pt-6 mt-6 border-t border-dashed border-slate-200 space-y-2 text-[11px] text-gray-500 leading-5">
-      {children}
-      <p>
-        * Formas de pagamento sujeitas a atualização por <strong>CUB (período de obras)</strong> e <strong>IGP-M + 1%</strong>
-        após a entrega das chaves.
-      </p>
-      <p>© {new Date().getFullYear()} Alvo BR — {company}{phone}{email}</p>
-    </footer>
-  );
-};
-
-/********************
- * PDF libs
- ********************/
-async function ensurePdfLibs() {
-  const needH2C = typeof window !== "undefined" && !window.html2canvas;
-  const needJSPDF = typeof window !== "undefined" && !(window.jspdf && window.jspdf.jsPDF);
-  const loaders = [];
-  if (needH2C) loaders.push(loadScript("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"));
-  if (needJSPDF) loaders.push(loadScript("https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"));
-  if (loaders.length) await Promise.all(loaders);
-}
-function loadScript(src) {
-  return new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = src;
-    s.async = true;
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error("Falha ao carregar " + src));
-    document.head.appendChild(s);
-  });
-}
-
-/********************
- * Defaults
- ********************/
-const generateComparativoId = () => \`cmp-\${Math.random().toString(36).slice(2, 10)}\`;
-
-const createComparativo = (overrides = {}) => ({
-  id: generateComparativoId(),
-  nome: "",
-  taxaAnual: 12,
-  descricao: "",
-  highlight: false,
-  ...overrides,
-});
-
-const withComparativoIds = (lista = []) => lista.map((item) => createComparativo(item));
-
